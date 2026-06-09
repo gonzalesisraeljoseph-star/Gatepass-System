@@ -2,8 +2,18 @@
 
 use CodeIgniter\Router\RouteCollection;
 
-/** @var RouteCollection $routes */
-$routes->get('/', 'Home::index');
+/**
+ * @var RouteCollection $routes
+ */
 
-$routes->add('/login', 'Auth::index');
-$routes->add('/dashboard', 'Pages\Dashboard::index');
+
+
+
+/** Dashboard */
+$routes->get('/', 'Pages\Dashboard::index');
+$routes->get('/dashboard', 'Pages\Dashboard::index');
+
+
+
+
+

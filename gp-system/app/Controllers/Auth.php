@@ -4,8 +4,17 @@ namespace App\Controllers;
 
 class Auth extends BaseController
 {
-    public function index(): string
+    public function index()
+    {   
+        echo view('auth/header');
+        echo view('auth/login');
+        echo view('auth/footer');
+    }
+
+     
+    public function logout()
     {
-        return view('Auth/login');
+        $this->session->destroy();
+        return redirect()->to('/');
     }
 }
