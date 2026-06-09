@@ -2,14 +2,20 @@
 <html>
 <head>
     <title><?= $title ?? 'My App' ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-7Un+XjYcjR1YqQXsb++Nw7aLdA/kxz4F2cY4jygsRbaxjOGdKZ0+NmkP3B12/az8" crossorigin="anonymous">
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
 <?= view('layouts/header') ?>
-<?= view('layouts/sidebar') ?>
 
-<?= $this->renderSection('content') ?>
+<div class="page-wrapper">
+    <?= view('layouts/sidebar') ?>
+
+    <main class="main-content">
+        <?= $this->renderSection('content') ?>
+    </main>
+</div>
 
 <?= view('layouts/footer') ?>
 
