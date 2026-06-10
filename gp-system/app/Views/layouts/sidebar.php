@@ -1,5 +1,5 @@
-<aside class="sidebar " id="sidebar">
-    <div class="sidebar-header">
+<aside class="sidebar d-flex flex-column" id="sidebar">
+    <div class="sidebar-header d-flex align-items-center justify-content-between">
         <a href="<?= base_url('/') ?>" class="logo">
             <div class="logo-icon">
                 <i class="fa-solid fa-star" aria-hidden="true"></i>
@@ -20,8 +20,8 @@
         </a>
 
         <a href="<?= base_url('projects') ?>" class="nav-link">
-            <span class="nav-icon"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></span>
-            Projects
+            <span class="nav-icon "><i class="fa-solid fa-folder-open" aria-hidden="true"></i></span>
+            Requests
             <span class="badge">4</span>
         </a>
 
@@ -45,16 +45,7 @@
     </nav>
 
     <div class="sidebar-footer">
-        <div class="theme-toggle">
-            <button class="theme-btn" id="btn-snow" onclick="setTheme('snow')" aria-label="Light mode">
-                <i class="fa-solid fa-sun" aria-hidden="true"></i>
-                Light
-            </button>
-            <button class="theme-btn" id="btn-carbon" onclick="setTheme('carbon')" aria-label="Dark mode">
-                <i class="fa-solid fa-moon" aria-hidden="true"></i>
-                Dark
-            </button>
-        </div>
+       
         <div class="user-profile">
             <div class="user-avatar">A</div>
             <div class="user-info">
