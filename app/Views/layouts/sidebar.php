@@ -81,12 +81,15 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="sidebar-link py-2">
+               <a href="<?= base_url('user-management') ?>" class="sidebar-link <?= (uri_string() == 'user-management') ? 'active' : '' ?>">
+                 <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
                     <span>User Management</span>
+                    
                 </a>
             </li>
             <li>
                 <a href="#" class="sidebar-link py-2">
+                  <iconify-icon icon="solar:clipboard-check-bold-duotone"></iconify-icon>
                     <span>Approving Officers</span>
                 </a>
             </li>
