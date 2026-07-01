@@ -168,6 +168,9 @@ textarea.form-control {
                     <option value="admin">Admin</option>
                     <option value="manager">IT</option>
                     <option value="employee">Employee</option>
+                    <option value="checker">Checker</option>
+                    <option value="teamlead">Teamlead</option>
+                    <option value="Supervisor">Supervisor</option>
                 </select>
             </div>
             <div class="mb-3">

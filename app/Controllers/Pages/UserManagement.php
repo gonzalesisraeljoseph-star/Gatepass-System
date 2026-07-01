@@ -3,6 +3,7 @@
 namespace App\Controllers\Pages;
 use App\Models\UM_Model;
 use App\Controllers\BaseController;
+use App\Models\userManagementModel;
 
 class UserManagement extends BaseController
 {
@@ -43,7 +44,7 @@ class UserManagement extends BaseController
         ];
 
         if($this ->request->getMethod() == 'post'){
-            $model = new UM_Model();
+            $model = new userManagementModel();
             $model -> save ($_POST);
         }
         return view('create_user', $data);
@@ -51,6 +52,6 @@ class UserManagement extends BaseController
     }
 
     public function saveUser(){
-        
+
     }
 }

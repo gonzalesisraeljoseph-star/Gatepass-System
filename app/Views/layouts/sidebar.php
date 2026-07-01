@@ -74,24 +74,27 @@
         <iconify-icon icon="solar:alt-arrow-down-bold" class="ms-auto collapse-arrow"></iconify-icon>
     </a>
     <div class="collapse" id="setupMenu">
-        <ul class="list-unstyled ps-4 mt-1">
-            <li>
-                <a href="#" class="sidebar-link py-2">
-                    <span>Template</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" class="sidebar-link py-2">
-                    <span>User Management</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" class="sidebar-link py-2">
-                    <span>Approving Officers</span>
-                </a>
-            </li>
-        </ul>
-    </div>
+    <ul class="list-unstyled ps-4 mt-1">
+        <li>
+            <a href="#" class="sidebar-link py-2">
+                <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
+                <span>Template</span>
+            </a>
+        </li>
+        <li>
+            <a href="<?= base_url('user-management') ?>" class="sidebar-link <?= (uri_string() == 'user-management') ? 'active' : '' ?>">
+                <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
+                <span>User Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" class="sidebar-link py-2">
+                <iconify-icon icon="solar:clipboard-check-bold-duotone"></iconify-icon>
+                <span>Approving Officers</span>
+            </a>
+        </li>
+    </ul>
+</div>
 </li>
         </ul>
 
