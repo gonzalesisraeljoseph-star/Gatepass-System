@@ -26,9 +26,9 @@ class UserManagement extends BaseController
     {
         $db = \Config\Database::connect();
 
-        $data = $db->table('gatepass_requests g')
-            ->select('g.*')
-            ->orderBy('g.id', 'DESC')
+        $data = $db->table('createuser c')
+            ->select('c.*')
+            ->orderBy('c.id', 'DESC')
             ->get()
             ->getResultArray();
 

@@ -154,13 +154,13 @@ textarea.form-control {
                 <label class="form-label fw-semibold">Email</label>
                 <input type="email" class="form-control" name="email" id="email">
             </div>
-
+            <!--Password-->
             <div class="mb-3" id="passwordGroup">
                 <label class="form-label fw-semibold">Password</label>
                 <input type="password" class="form-control" name="password" id="password">
                 <small class="text-muted" id="passwordHint">Leave blank to keep current password</small>
             </div>
-
+            <!--ROLE-->
             <div class="mb-3">
                 <label class="form-label fw-semibold">Role</label>
                 <select class="form-control" name="role" id="role" required>

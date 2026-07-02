@@ -30,3 +30,5 @@ $routes->get('api/hardware', 'Api\Hardware::getHardware');
 
 /** User Management  */
 $routes->get('/user-management', 'Pages\UserManagement::index');
+$routes->get('user-management/list', 'Pages\Gatepass::list');
+$routes->post('user-management/store', 'Pages\Gatepass::store');
