@@ -53,10 +53,10 @@ class Database extends Config
 
     public array $hris = [
             'DSN'          => '',
-            'hostname'     => 'localhost',
-            'username'     => 'root',
+            'hostname'     => '',
+            'username'     => '',
             'password'     => '',
-            'database'     => 'hris_system',
+            'database'     => '',
             'DBDriver'     => 'MySQLi',
             'DBPrefix'     => '',
             'pConnect'     => false,
@@ -70,9 +70,7 @@ class Database extends Config
             'failover'     => [],
             'port'         => 3306,
     ];
-    
-    
-     
+
     //    /**
     //     * Sample database connection for SQLite3.
     //     *
