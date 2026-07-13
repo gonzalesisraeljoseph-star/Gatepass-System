@@ -4,24 +4,23 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class userManagementModel extends Model
+class UM_Model extends Model
 {
     protected $table            = 'tbl_user_info';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
-    protected $useSoftDeletes   = true;
+    protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    
-
-
 
     // Adjust these to match your actual `users` table columns
     protected $allowedFields = [
+        'employee',
+        'role',
         'username',
-        'md5_password',
-        'ref_emp',
-        'role'
+        'email',
+        'password',
+        'status',
     ];
 
     // Timestamps
@@ -64,50 +63,14 @@ class userManagementModel extends Model
     /**
      * Get all users ordered by most recent first.
      */
-    public function getAllUsersDetails()
+    public function getAllUsers()
     {
-        $db = \Config\Database::connect('hris');
-
-        return $db->table('tbl_user_info u')
-            ->select("u.id, u.username,
-                        e.full_name as employee,
-                        e.department_name as department, 
-                        e.position_name as role, 
-                        '' as email,
-                        'active' as status")
-            ->join('v_profile_employee e', 'e.profile_id = u.ref_emp', 'left')
-            ->orderBy('u.id', 'ASC')
-            ->get()
-            ->getResultArray();
+        return $this->orderBy('id', 'DESC')->findAll();
     }
 
     /**
      * Find a single user by username.
      */
-    public function getDepartments()
-    {
-        $db = \Config\Database::connect();
-
-        return $db->table('tbl_department')
-            ->select('name as name')
-            ->where('name !=', '')
-            ->orderBy('name', 'ASC')
-            ->get()
-            ->getResultArray();
-    }
-
-    public function getRoles()
-    {
-        $db = \Config\Database::connect();
-
-        return $db->table('role')
-            ->select('role_description as name')
-            ->where('role_description !=', '')
-            ->orderBy('role_description', 'ASC')
-            ->get()
-            ->getResultArray();
-    }
-
     public function findByUsername(string $username)
     {
         return $this->where('username', $username)->first();
