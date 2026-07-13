@@ -4,14 +4,17 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class UM_Model extends Model
+class userManagementModel extends Model
 {
     protected $table            = 'tbl_user_info';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
-    protected $useSoftDeletes   = false;
+    protected $useSoftDeletes   = true;
     protected $protectFields    = true;
+    
+
+
 
     // Adjust these to match your actual `users` table columns
     protected $allowedFields = [

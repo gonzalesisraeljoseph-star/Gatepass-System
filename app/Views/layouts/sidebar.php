@@ -74,11 +74,7 @@
         <iconify-icon icon="solar:alt-arrow-down-bold" class="ms-auto collapse-arrow"></iconify-icon>
     </a>
     <div class="collapse" id="setupMenu">
-<<<<<<< Updated upstream
-         <ul class="list-unstyled ps-4 mt-1">
-=======
     <ul class="list-unstyled ps-4 mt-1">
->>>>>>> Stashed changes
         <li>
             <a href="#" class="sidebar-link py-2">
                 <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
@@ -98,13 +94,9 @@
             </a>
         </li>
     </ul>
-<<<<<<< Updated upstream
-    </div>
+</div>
 </li>
         </ul>
-=======
-</div>
->>>>>>> Stashed changes
 
         <div class="sidebar-title mt-4">
             ACCOUNT
