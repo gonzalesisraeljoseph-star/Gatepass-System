@@ -107,25 +107,66 @@ textarea.form-control {
 
     <div class="card-box">
         <div class="p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    Show
+                    <select id="rowsPerPage" class="form-select form-select-sm d-inline-block" style="width: auto;">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="all">All</option>
+                    </select>
+                    entries
+                </div>
+                <div id="tableInfo" class="text-muted small"></div>
+            </div>
+
             <table class="table align-middle" id="usersTable">
                 <thead>
                     <tr>
                         <th>ID</th>
                         <th>Employee</th>
-                        <th>Username</th>
-                        <th>Email</th>
+                        <th>Department</th>
                         <th>Role</th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
+                <tbody>
+                           <?php if (! empty($users)) : ?>
+                        <?php foreach ($users as $user) : ?>
+                            <tr>
+                                <td><?= esc($user['id']) ?></td>
+                                <td><?= esc($user['username']) ?></td>
+                                <td><?= esc($user['department']) ?></td>
+                                <td><?= esc($user['role']) ?></td>
+                                <td>
+                                    <?php $status = $user['status'] ?? 'active'; ?>
+                                    <?php if ($status === 'active') : ?>
+                                        <span class="badge-soft badge-active">Active</span>
+                                    <?php else : ?>
+                                        <span class="badge-soft badge-inactive">Inactive</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><button type="button" class="btn btn-sm btn-light" onclick='openEditModal(<?= json_encode($user, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>Edit</button></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr>
+                            <td colspan="5" style="text-align: center;">No users found.</td>
+                        </tr>
+                    <?php endif; ?>
+
+                </tbody>
             </table>
         </div>
     </div>
 
 </div>
 </div>
-
+<!--Modal-->
 <div class="modal fade" id="createModal">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -154,44 +195,46 @@ textarea.form-control {
                 <label class="form-label fw-semibold">Email</label>
                 <input type="email" class="form-control" name="email" id="email">
             </div>
-
+            <!--Password-->
             <div class="mb-3" id="passwordGroup">
                 <label class="form-label fw-semibold">Password</label>
                 <input type="password" class="form-control" name="password" id="password">
                 <small class="text-muted" id="passwordHint">Leave blank to keep current password</small>
             </div>
-
+            <!--ROLE-->
             <div class="mb-3">
                 <label class="form-label fw-semibold">Role</label>
                 <select class="form-control" name="role" id="role" required>
                     <option value="">Select role...</option>
-                    <option value="admin">Admin</option>
-                    <option value="manager">IT</option>
-                    <option value="employee">Employee</option>
+                    <?php if (! empty($roles)) : ?>
+                        <?php foreach ($roles as $role) : ?>
+                            <option value="<?= esc($role['name'] ?? '') ?>">
+                                <?= esc($role['name'] ?? '') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <option value="admin">Admin</option>
+                        <option value="manager">IT</option>
+                        <option value="employee">Employee</option>
+                        <option value="checker">Checker</option>
+                        <option value="teamlead">Teamlead</option>
+                        <option value="Supervisor">Supervisor</option>
+                    <?php endif; ?>
                 </select>
             </div>
             <div class="mb-3">
-    <label class="form-label fw-semibold">Department</label>
-    <select class="form-control" name="role" id="role" required>
-        <option value="">Select Department...</option>
-        <option value="accounting">Accounting</option>
-        <option value="billing">Billing</option>
-        <option value="collection">Collection</option>
-        <option value="compliance">Compliance</option>
-        <option value="cs_nonvoice">CS- Non Voice</option>
-        <option value="cs_voice">CS- Voice</option>
-        <option value="hr">HR</option>
-        <option value="inbound_sales">Inbound Sales</option>
-        <option value="it">IT</option>
-        <option value="occupier">Occupier</option>
-        <option value="operation">Operation</option>
-        <option value="outbound_sales">Outbound Sales</option>
-        <option value="pricing">Pricing</option>
-        <option value="provisioning">Provisioning</option>
-        <option value="retention">Retention</option>
-        <option value="tqa">TQA</option>
-    </select>
-</div>
+                <label class="form-label fw-semibold">Department</label>
+                <select class="form-control" name="department" id="department" required>
+                    <option value="">Select Department...</option>
+                    <?php if (! empty($departments)) : ?>
+                        <?php foreach ($departments as $department) : ?>
+                            <option value="<?= esc($department['name'] ?? $department['department_name'] ?? '') ?>">
+                                <?= esc($department['name'] ?? $department['department_name'] ?? '') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            </div>
 
             <div class="mb-3">
                 <label class="form-label fw-semibold">Status</label>
@@ -213,20 +256,78 @@ textarea.form-control {
   </div>
 </div>
 
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete User</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to remove <strong id="deleteUserName"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
 <script>
 let usersTable;
+let selectedUserId = null;
+
+function updateTableInfo() {
+    if (!usersTable) {
+        return;
+    }
+
+    const info = usersTable.page.info();
+    const rowsSelect = document.getElementById('rowsPerPage');
+    const tableInfo = document.getElementById('tableInfo');
+
+    if (!rowsSelect || !tableInfo) {
+        return;
+    }
+
+    const total = info.recordsTotal ?? 0;
+    const start = total === 0 ? 0 : info.start + 1;
+    const end = info.end || 0;
+
+    tableInfo.textContent = total === 0
+        ? 'No entries'
+        : `Showing ${start} to ${end} of ${total} entries`;
+
+    rowsSelect.value = info.length === -1 ? 'all' : String(info.length);
+}
 
 $(document).ready(function () {
+    const rowsSelect = document.getElementById('rowsPerPage');
+
+    // Prevent "Cannot reinitialise DataTable" errors if a global script
+    // (e.g. in layouts/main) also auto-inits tables with class "table".
+    if ($.fn.dataTable.isDataTable('#usersTable')) {
+        $('#usersTable').DataTable().destroy();
+    }
+
     usersTable = $('#usersTable').DataTable({
+        destroy: true,
         ajax: {
-            url: "<?= base_url('usermanagement/list') ?>",
+            url: "<?= base_url('user-management/list') ?>",
             dataSrc: 'data'
         },
+        paging: true,
+        pageLength: 10,
+        lengthChange: false,
+        info: false,
         columns: [
             { data: 'id' },
             { data: 'employee' },
-            { data: 'username' },
-            { data: 'email' },
+            { data: 'department' },
             { data: 'role' },
             {
                 data: 'status',
@@ -239,18 +340,35 @@ $(document).ready(function () {
                 data: null,
                 orderable: false,
                 render: function (row) {
+                    const name = (row.employee ?? row.username ?? 'this user').replace(/'/g, "\\'");
                     return `
-                        <button class="btn btn-sm btn-light" onclick='editUser(${JSON.stringify(row)})'>Edit</button>
-                        <button class="btn btn-sm btn-light text-danger" onclick="deleteUser(${row.id})">Delete</button>
+                        <button class="btn btn-sm btn-light" onclick='openEditModal(${JSON.stringify(row)})'>Edit</button>
+                        <button class="btn btn-sm btn-light text-danger" onclick="openDeleteModal(${row.id}, '${name}')">Delete</button>
                     `;
                 }
             }
         ]
     });
 
+    if (rowsSelect) {
+        rowsSelect.addEventListener('change', function () {
+            const value = this.value;
+            usersTable.page.len(value === 'all' ? -1 : Number(value)).draw();
+        });
+    }
+
+    usersTable.on('draw', updateTableInfo);
+    updateTableInfo();
+
     $('#userForm').on('submit', function (e) {
         e.preventDefault();
         saveUser();
+    });
+
+    $('#confirmDeleteBtn').on('click', function () {
+        if (selectedUserId) {
+            deleteUser(selectedUserId);
+        }
     });
 });
 
@@ -259,20 +377,23 @@ function openCreateModal() {
     document.getElementById('userForm').reset();
     document.getElementById('userId').value = '';
     document.getElementById('passwordHint').style.display = 'none';
+    document.getElementById('passwordGroup').style.display = 'block';
 }
 
-function editUser(row) {
+function openEditModal(row) {
     document.getElementById('userModalTitle').innerText = 'Edit User';
     document.getElementById('userId').value = row.id ?? '';
     document.getElementById('employee').value = row.employee ?? '';
     document.getElementById('username').value = row.username ?? '';
     document.getElementById('email').value = row.email ?? '';
+    document.getElementById('department').value = row.department ?? '';
     document.getElementById('role').value = row.role ?? '';
     document.getElementById('status').value = row.status ?? 'active';
     document.getElementById('password').value = '';
     document.getElementById('passwordHint').style.display = 'block';
+    document.getElementById('passwordGroup').style.display = 'block';
 
-    const modal = new bootstrap.Modal(document.getElementById('createModal'));
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('createModal'));
     modal.show();
 }
 
@@ -287,7 +408,7 @@ function saveUser() {
     .then(res => res.json())
     .then(res => {
         if (res.success) {
-            bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('createModal')).hide();
             usersTable.ajax.reload();
         } else {
             alert(res.message ?? 'Something went wrong.');
@@ -296,21 +417,27 @@ function saveUser() {
     .catch(() => alert('Request failed.'));
 }
 
-function deleteUser(id) {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+function openDeleteModal(id, name) {
+    selectedUserId = id;
+    document.getElementById('deleteUserName').textContent = name;
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal'));
+    modal.show();
+}
 
+function deleteUser(id) {
     fetch("<?= base_url('usermanagement/deleteUser') ?>/" + id, {
         method: 'POST'
     })
     .then(res => res.json())
     .then(res => {
         if (res.success) {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal')).hide();
             usersTable.ajax.reload();
         } else {
             alert(res.message ?? 'Delete failed.');
         }
-    });
+    })
+    .catch(() => alert('Delete request failed.'));
 }
 </script>
-
 <?= $this->endSection() ?>
