@@ -35,7 +35,7 @@
             <li>
                 <a href="<?= base_url('dashboard') ?>" class="sidebar-link <?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
                     <iconify-icon icon="solar:home-2-bold-duotone"></iconify-icon>
-                    <span>Dashboard</span>
+                    <span>Dashboard System</span>
                 </a>
             </li>
 
