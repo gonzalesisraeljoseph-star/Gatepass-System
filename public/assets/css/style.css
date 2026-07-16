@@ -39457,3 +39457,13 @@ body .connect-sorting-content {
 .sidebar-link[aria-expanded="true"] .collapse-arrow {
     transform: rotate(180deg);
 }
+
+/* Confirm-save summary list */
+#confirmSaveSummary li {
+    padding: 4px 0;
+    border-bottom: 1px dashed #eef2f7;
+}
+ 
+#confirmSaveSummary li:last-child {
+    border-bottom: none;
+}
