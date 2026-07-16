@@ -34,7 +34,7 @@ class Auth extends BaseController
             ])->setStatusCode(400);
         }
 
-        $db = \Config\Database::connect('hris');
+        $db = \Config\Database::connect();
 
         $user = $db->table('tbl_user_info u')
             ->select('
