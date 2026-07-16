@@ -1,126 +1,189 @@
 <?php
 
 namespace App\Controllers\Pages;
+
 use App\Controllers\BaseController;
 use App\Models\userManagementModel;
+use Config\Database;
 
 class UserManagement extends BaseController
 {
+    protected userManagementModel $userModel;
+
     public function __construct()
     {
-        if (!session()->get('logged_in')) {
-            header('Location: ' . base_url('/'));
-            exit;
-        }
+        $this->userModel = new userManagementModel();
     }
 
+    /**
+     * Render the User Management page (table + create/edit modal).
+     * The table itself is populated client-side via list().
+     */
     public function index()
     {
-        $model = new userManagementModel();
-
-        return view('pages/usermanagement', [
-            'title' => 'User Management',
-            'users' => $model->getAllUsersDetails(),
-            'departments' => $model->getDepartments(),
-            'roles' => $model->getRoles()
-        ]);
-    }
-
-    public function list()
-    {
-        $model = new userManagementModel();
-        $data = $model->getAllUsersDetails();
-
-        return $this->response->setJSON([
-            'data' => $data
-        ]);
-    }
-
-    
-
-
-    public function edituser(){
         $data = [
-            'user' => '$user',
-            'role' => '$role'
+            'users'       => $this->userModel->getAllUsersDetails(),
+            'roles'       => $this->userModel->getRoles(),
+            'departments' => $this->userModel->getDepartments(),
         ];
 
-        if($this ->request->getMethod() == 'post'){
-            $model = new userManagementModel();
-            $model -> save ($_POST);
-        }
-        return view('create_user', $data);
-
+        return view('pages/usermanagement', $data);
     }
 
+    /**
+     * JSON feed for the DataTable (user-management/list, usermanagement/list).
+     */
+    public function list()
+    {
+        return $this->response->setJSON([
+            'data' => $this->userModel->getAllUsersDetails(),
+        ]);
+    }
+
+    /**
+     * GET usermanagement/saveUser/(:num) - return a single user as JSON
+     * (kept for the routed endpoint; the current UI populates the edit
+     * modal client-side from the row data already in the table instead).
+     */
+    public function edituser($id)
+    {
+        $result = $this->userModel->editUser($id);
+
+        if ($result === null) {
+            return $this->response->setJSON(['success' => false, 'message' => 'User not found.']);
+        }
+
+        return $this->response->setJSON(['success' => true, 'user' => $result['user']]);
+    }
+
+    /**
+     * POST usermanagement/saveUser | user-management/saveUser
+     * Handles BOTH create and update - if 'id' is present in the POST
+     * data, it's an update; otherwise it's a create.
+     *
+     * ref_emp is resolved by looking up the typed "Employee Name" against
+     * v_profile_employee.full_name to get profile_id.
+     *
+     * email is intentionally ignored - no column exists for it.
+     */
     public function saveUser()
     {
-        $model = new userManagementModel();
-        $post = $this->request->getPost();
-        $id = $post['id'] ?? null;
+        $id              = $this->request->getPost('id');
+        $employeeName    = trim((string) $this->request->getPost('employee'));
+        $username        = $this->request->getPost('username');
+        $password        = $this->request->getPost('password');
+        $roleDescription = $this->request->getPost('role');
 
-        $db = \Config\Database::connect();
-        $tableFields = array_map('strtolower', $db->getFieldNames($model->table));
-        $data = [];
+        // Resolve ref_emp from the typed employee name.
+        $db = Database::connect(); // hris_system (default group)
+        $employee = $db->table('v_profile_employee')
+            ->select('profile_id')
+            ->where('full_name', $employeeName)
+            ->get()
+            ->getRowArray();
 
-        if (in_array('username', $tableFields, true)) {
-            $data['username'] = $post['username'] ?? '';
+        if (!$employee) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => "No employee found matching \"{$employeeName}\".",
+            ]);
         }
 
-        if (!empty($post['password']) && in_array('md5_password', $tableFields, true)) {
-            $data['md5_password'] = md5($post['password']);
-        }
+        $refEmp = $employee['profile_id'];
 
         if (!empty($id)) {
-            $db->table($model->table)->where('id', $id)->update($data);
-        } else {
-            $db->table($model->table)->insert($data);
-        }
+            // UPDATE - if username was left blank, keep the existing one
+            // instead of overwriting it.
+            if (empty($username)) {
+                $existing = $this->userModel->find($id);
+                if (!$existing) {
+                    return $this->response->setJSON(['success' => false, 'message' => 'User not found.']);
+                }
+                $username = $existing['username'];
+            }
 
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'User saved successfully.'
-        ]);
-    }
-
-    public function deleteUser($id = null)
-    {
-        if (empty($id)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'User id is required.'
-            ]);
-        }
-
-        $model = new userManagementModel();
-        $user = $model->find($id);
-
-        if (!$user) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'User not found.'
-            ]);
-        }
-
-        $model->delete($id);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'User deleted successfully.'
-        ]);
-    }
-
-      public function listUser($id){
-
-        $model = new userManagementModel();
-        $user  = $model->find($id);
-        if($user){
             $data = [
-                'user' => $user
+                'id'       => $id, // needed so the {id} placeholder in the
+                                    // is_unique validation rule resolves and
+                                    // excludes this row from the check
+                'username' => $username,
+                'ref_emp'  => $refEmp,
             ];
-            return view('users/show', $data);
+
+            if (!empty($password)) {
+                $data['password'] = $password;
+            }
+
+            // Triggers hashPassword + stashOldRefEmp (beforeUpdate) and
+            // syncUserToGatepass (afterUpdate) automatically.
+            $success = $this->userModel->update($id, $data);
+        } else {
+            // CREATE - username is required, no fallback available.
+            if (empty($username)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Username is required.']);
+            }
+
+            $data = [
+                'username' => $username,
+                'ref_emp'  => $refEmp,
+            ];
+
+            if (!empty($password)) {
+                $data['password'] = $password;
+            }
+
+            // Triggers hashPassword (beforeInsert) and syncUserToGatepass
+            // (afterInsert) automatically.
+            $success = $this->userModel->insert($data);
         }
 
-        return redirect()->to('users')->with('error', 'User not found.');
+        if (!$success) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors'  => $this->userModel->errors(),
+            ]);
+        }
+
+        // Role is set separately - role_id is only ever written by assignRole().
+        $roleResult = null;
+        if (!empty($roleDescription)) {
+            $roleResult = $this->userModel->assignRole($refEmp, $username, $roleDescription);
+        }
+
+        return $this->response->setJSON([
+            'success'        => true,
+            'role_submitted' => $roleDescription,
+            'role_result'    => $roleResult, // null = no role submitted; otherwise diagnostics from assignRole()
+        ]);
+    }
+
+    /**
+     * POST usermanagement/deleteUser/(:num) | user-management/deleteUser/(:num)
+     */
+    public function deleteUser($id)
+    {
+        $deleted = $this->userModel->delete($id);
+
+        if (!$deleted) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Delete failed.']);
+        }
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    /**
+     * Manual/CLI-style backfill: bulk sync every user in tbl_user_info
+     * into gatepass.users, and align user_roles.user_id for existing
+     * role rows. Does NOT set role_id - only assignRole() does that.
+     */
+    public function syncUsers()
+    {
+        $result = $this->userModel->syncAllUsers();
+
+        return redirect()->back()->with(
+            'message',
+            "Synced: {$result['synced']}, Skipped: {$result['skipped']}, Errors: " . count($result['errors'])
+        );
     }
 }
