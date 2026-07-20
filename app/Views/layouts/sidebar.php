@@ -76,7 +76,7 @@
     <div class="collapse" id="setupMenu">
     <ul class="list-unstyled ps-4 mt-1">
         <li>
-            <a href="#" class="sidebar-link py-2">
+            <a href="<?= base_url('template') ?>" class="sidebar-link <?= (uri_string() == 'template') ? 'active' : '' ?>">
                 <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
                 <span>Template</span>
             </a>
