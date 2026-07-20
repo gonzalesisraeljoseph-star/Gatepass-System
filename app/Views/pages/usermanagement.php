@@ -260,15 +260,19 @@ textarea.form-control {
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Delete User</h5>
+        <h5 class="modal-title" id="statusModalTitle">Deactivate User</h5>
         <button class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p>Are you sure you want to remove <strong id="deleteUserName"></strong>?</p>
+        <p id="statusModalText">Are you sure you want to deactivate <strong id="deleteUserName"></strong>?</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+        <!-- Real form, no AJAX -->
+        <form id="toggleStatusForm" action="" method="post">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">Confirm</button>
+        </form>
       </div>
     </div>
   </div>
@@ -342,7 +346,7 @@ $(document).ready(function () {
                 render: function (row) {
                     const name = (row.employee ?? row.username ?? 'this user').replace(/'/g, "\\'");
                     return `
-                        <button class="btn btn-sm btn-light" onclick='openEditModal(${JSON.stringify(row)})'>Edit</button>
+                        <button class="btn btn-sm btn-light"    onclick='openEditModal(${JSON.stringify(row)})'>Edit</button>
                         <button class="btn btn-sm btn-light text-danger" onclick="openDeleteModal(${row.id}, '${name}')">Delete</button>
                     `;
                 }
@@ -365,11 +369,7 @@ $(document).ready(function () {
         saveUser();
     });
 
-    $('#confirmDeleteBtn').on('click', function () {
-        if (selectedUserId) {
-            deleteUser(selectedUserId);
-        }
-    });
+   
 });
 
 function openCreateModal() {
@@ -397,6 +397,75 @@ function openEditModal(row) {
     modal.show();
 }
 
+<<<<<<< Updated upstream
+=======
+function openDeleteModal(id, name, currentStatus) {
+    selectedUserId = id;
+    const action = currentStatus === 'active' ? 'deactivate' : 'activate';
+
+    document.getElementById('deleteUserName').textContent = name;
+    document.getElementById('statusModalTitle').textContent =
+        action.charAt(0).toUpperCase() + action.slice(1) + ' User';
+    document.getElementById('statusModalText').textContent =
+        `Are you sure you want to ${action} ${name}?`;
+
+    // Must match: $routes->post('users/toggleStatus/(:num)', ...)
+    document.getElementById('toggleStatusForm').action =
+        "<?= base_url('users/toggleStatus') ?>/" + id;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+/**
+ * Validates the form values and, if everything looks right, builds a
+ * human-readable summary and opens the confirm-save modal.
+ */
+function showConfirmSaveModal() {
+    const isEdit = !!document.getElementById('userId').value;
+
+    const employee   = document.getElementById('employee').value.trim();
+    const username    = document.getElementById('username').value.trim();
+    const email       = document.getElementById('email').value.trim();
+    const role        = document.getElementById('role').value;
+    const department  = document.getElementById('department').value;
+    const status      = document.getElementById('status').value;
+    const password    = document.getElementById('password').value;
+
+    if (!role) {
+        alert('Please select a role.');
+        return;
+    }
+    if (!department) {
+        alert('Please select a department.');
+        return;
+    }
+    if (!isEdit && !password) {
+        alert('Password is required for new users.');
+        return;
+    }
+
+    const rows = [
+        ['Employee', employee],
+        ['Username', username],
+        ['Email', email || '(none)'],
+        ['Role', role],
+        ['Department', department],
+        ['Status', status],
+        ['Password', password ? 'Will be updated' : 'Unchanged']
+    ];
+
+    const summaryHtml = rows.map(([label, value]) =>
+        `<li class="mb-1"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</li>`
+    ).join('');
+
+    document.getElementById('confirmSaveSummary').innerHTML = summaryHtml;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmSaveModal'));
+    modal.show();
+}
+
+>>>>>>> Stashed changes
 function saveUser() {
     const form = document.getElementById('userForm');
     const formData = new FormData(form);
@@ -417,27 +486,8 @@ function saveUser() {
     .catch(() => alert('Request failed.'));
 }
 
-function openDeleteModal(id, name) {
-    selectedUserId = id;
-    document.getElementById('deleteUserName').textContent = name;
-    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal'));
-    modal.show();
-}
 
-function deleteUser(id) {
-    fetch("<?= base_url('usermanagement/deleteUser') ?>/" + id, {
-        method: 'POST'
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (res.success) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal')).hide();
-            usersTable.ajax.reload();
-        } else {
-            alert(res.message ?? 'Delete failed.');
-        }
-    })
-    .catch(() => alert('Delete request failed.'));
-}
+
+
 </script>
 <?= $this->endSection() ?>

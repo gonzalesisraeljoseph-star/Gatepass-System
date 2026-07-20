@@ -68,108 +68,106 @@ class UserManagement extends BaseController
      */
     public function saveUser()
     {
-        $id              = $this->request->getPost('id');
-        $employeeName    = trim((string) $this->request->getPost('employee'));
-        $username        = $this->request->getPost('username');
-        $password        = $this->request->getPost('password');
-        $roleDescription = $this->request->getPost('role');
+    $id              = $this->request->getPost('id');
+    $employeeName    = trim((string) $this->request->getPost('employee'));
+    $username        = $this->request->getPost('username');
+    $password        = $this->request->getPost('password');
+    $roleDescription = $this->request->getPost('role');
+    $status          = $this->request->getPost('status'); // 'active' | 'inactive'
 
-        // Resolve ref_emp from the typed employee name.
-        $db = Database::connect(); // hris_system (default group)
-        $employee = $db->table('v_profile_employee')
-            ->select('profile_id')
-            ->where('full_name', $employeeName)
-            ->get()
-            ->getRowArray();
+    // Resolve ref_emp from the typed employee name.
+    $db = Database::connect(); // hris_system (default group)
+    $employee = $db->table('v_profile_employee')
+        ->select('profile_id')
+        ->where('full_name', $employeeName)
+        ->get()
+        ->getRowArray();
 
-        if (!$employee) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => "No employee found matching \"{$employeeName}\".",
-            ]);
-        }
-
-        $refEmp = $employee['profile_id'];
-
-        if (!empty($id)) {
-            // UPDATE - if username was left blank, keep the existing one
-            // instead of overwriting it.
-            if (empty($username)) {
-                $existing = $this->userModel->find($id);
-                if (!$existing) {
-                    return $this->response->setJSON(['success' => false, 'message' => 'User not found.']);
-                }
-                $username = $existing['username'];
-            }
-
-            $data = [
-                'id'       => $id, // needed so the {id} placeholder in the
-                                    // is_unique validation rule resolves and
-                                    // excludes this row from the check
-                'username' => $username,
-                'ref_emp'  => $refEmp,
-            ];
-
-            if (!empty($password)) {
-                $data['password'] = $password;
-            }
-
-            // Triggers hashPassword + stashOldRefEmp (beforeUpdate) and
-            // syncUserToGatepass (afterUpdate) automatically.
-            $success = $this->userModel->update($id, $data);
-        } else {
-            // CREATE - username is required, no fallback available.
-            if (empty($username)) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Username is required.']);
-            }
-
-            $data = [
-                'username' => $username,
-                'ref_emp'  => $refEmp,
-            ];
-
-            if (!empty($password)) {
-                $data['password'] = $password;
-            }
-
-            // Triggers hashPassword (beforeInsert) and syncUserToGatepass
-            // (afterInsert) automatically.
-            $success = $this->userModel->insert($data);
-        }
-
-        if (!$success) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Validation failed.',
-                'errors'  => $this->userModel->errors(),
-            ]);
-        }
-
-        // Role is set separately - role_id is only ever written by assignRole().
-        $roleResult = null;
-        if (!empty($roleDescription)) {
-            $roleResult = $this->userModel->assignRole($refEmp, $username, $roleDescription);
-        }
-
+    if (!$employee) {
         return $this->response->setJSON([
-            'success'        => true,
-            'role_submitted' => $roleDescription,
-            'role_result'    => $roleResult, // null = no role submitted; otherwise diagnostics from assignRole()
+            'success' => false,
+            'message' => "No employee found matching \"{$employeeName}\".",
         ]);
+    }
+
+    $refEmp = $employee['profile_id'];
+    $flag   = $status === 'inactive' ? 0 : 1; // default to active if not sent
+
+    if (!empty($id)) {
+        if (empty($username)) {
+            $existing = $this->userModel->find($id);
+            if (!$existing) {
+                return $this->response->setJSON(['success' => false, 'message' => 'User not found.']);
+            }
+            $username = $existing['username'];
+        }
+
+        $data = [
+            'id'       => $id,
+            'username' => $username,
+            'ref_emp'  => $refEmp,
+            'flag'     => $flag,
+        ];
+
+        if (!empty($password)) {
+            $data['password'] = $password;
+        }
+
+        $success = $this->userModel->update($id, $data);
+    } else {
+        if (empty($username)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Username is required.']);
+        }
+
+        $data = [
+            'username' => $username,
+            'ref_emp'  => $refEmp,
+            'flag'     => $flag,
+        ];
+
+        if (!empty($password)) {
+            $data['password'] = $password;
+        }
+
+        $success = $this->userModel->insert($data);
+    }
+
+    if (!$success) {
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Validation failed.',
+            'errors'  => $this->userModel->errors(),
+        ]);
+    }
+
+    $roleResult = null;
+    if (!empty($roleDescription)) {
+        $roleResult = $this->userModel->assignRole($refEmp, $username, $roleDescription);
+    }
+
+    return $this->response->setJSON([
+        'success'        => true,
+        'role_submitted' => $roleDescription,
+        'role_result'    => $roleResult,
+    ]);
     }
 
     /**
      * POST usermanagement/deleteUser/(:num) | user-management/deleteUser/(:num)
      */
-    public function deleteUser($id)
-    {
-        $deleted = $this->userModel->delete($id);
+    public function toggleStatus($id)
+    {   
+    $userModel = new \App\Models\userManagementModel();
+    $newFlag = $userModel->toggleFlag($id);
 
-        if (!$deleted) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Delete failed.']);
-        }
+    if ($newFlag === null) {
+        return redirect()->back()->with('error', 'User not found.');
+    }
 
-        return $this->response->setJSON(['success' => true]);
+    return redirect()->back()->with(
+        'success',
+        $newFlag == 1 ? 'User activated.' : 'User deactivated.'
+    );
     }
 
     /**

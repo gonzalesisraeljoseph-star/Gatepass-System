@@ -31,10 +31,8 @@ $routes->get('api/hardware', 'Api\Hardware::getHardware');
 /** User Management  */
 $routes->get('/user-management', 'Pages\UserManagement::index');
 $routes->get('user-management/list', 'Pages\UserManagement::list');
-$routes->get('usermanagement/list', 'Pages\UserManagement::list');
 $routes->get('usermanagement/saveUser/(:num)', 'Pages\UserManagement::edituser/$1');
 $routes->post('usermanagement/saveUser', 'Pages\UserManagement::saveUser');
-$routes->post('user-management/saveUser', 'Pages\UserManagement::saveUser');
 $routes->post('usermanagement/deleteUser/(:num)', 'Pages\UserManagement::deleteUser/$1');
-$routes->post('user-management/deleteUser/(:num)', 'Pages\UserManagement::deleteUser/$1');
+$routes->post('users/toggleStatus/(:num)', 'Pages\UserManagement::toggleStatus/$1');
 $routes->get('users/sync', 'Pages\UserManagement::syncUsers');
