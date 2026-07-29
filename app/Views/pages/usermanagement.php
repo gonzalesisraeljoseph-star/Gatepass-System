@@ -291,15 +291,19 @@ textarea.form-control {
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Delete User</h5>
+        <h5 class="modal-title" id="statusModalTitle">Deactivate User</h5>
         <button class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p>Are you sure you want to remove <strong id="deleteUserName"></strong>?</p>
+        <p id="statusModalText">Are you sure you want to deactivate <strong id="deleteUserName"></strong>?</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+        <!-- Real form, no AJAX -->
+        <form id="toggleStatusForm" action="" method="post">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">Confirm</button>
+        </form>
       </div>
     </div>
   </div>
@@ -379,7 +383,7 @@ $(document).ready(function () {
                 render: function (row) {
                     const name = (row.employee ?? row.username ?? 'this user').replace(/'/g, "\\'");
                     return `
-                        <button class="btn btn-sm btn-light" onclick='openEditModal(${JSON.stringify(row)})'>Edit</button>
+                        <button class="btn btn-sm btn-light"    onclick='openEditModal(${JSON.stringify(row)})'>Edit</button>
                         <button class="btn btn-sm btn-light text-danger" onclick="openDeleteModal(${row.id}, '${name}')">Delete</button>
                     `;
                 }
@@ -414,11 +418,7 @@ $(document).ready(function () {
         saveUser();
     });
 
-    $('#confirmDeleteBtn').on('click', function () {
-        if (selectedUserId) {
-            deleteUser(selectedUserId);
-        }
-    });
+   
 });
 
 function openCreateModal() {
@@ -443,6 +443,24 @@ function openEditModal(row) {
     document.getElementById('passwordGroup').style.display = 'block';
 
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('createModal'));
+    modal.show();
+}
+
+function openDeleteModal(id, name, currentStatus) {
+    selectedUserId = id;
+    const action = currentStatus === 'active' ? 'deactivate' : 'activate';
+
+    document.getElementById('deleteUserName').textContent = name;
+    document.getElementById('statusModalTitle').textContent =
+        action.charAt(0).toUpperCase() + action.slice(1) + ' User';
+    document.getElementById('statusModalText').textContent =
+        `Are you sure you want to ${action} ${name}?`;
+
+    // Must match: $routes->post('users/toggleStatus/(:num)', ...)
+    document.getElementById('toggleStatusForm').action =
+        "<?= base_url('users/toggleStatus') ?>/" + id;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal'));
     modal.show();
 }
 
@@ -494,6 +512,7 @@ function showConfirmSaveModal() {
     modal.show();
 }
 
+
 function saveUser() {
     const form = document.getElementById('userForm');
     const formData = new FormData(form);
@@ -514,27 +533,8 @@ function saveUser() {
     .catch(() => alert('Request failed.'));
 }
 
-function openDeleteModal(id, name) {
-    selectedUserId = id;
-    document.getElementById('deleteUserName').textContent = name;
-    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal'));
-    modal.show();
-}
 
-function deleteUser(id) {
-    fetch("<?= base_url('usermanagement/deleteUser') ?>/" + id, {
-        method: 'POST'
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (res.success) {
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal')).hide();
-            usersTable.ajax.reload();
-        } else {
-            alert(res.message ?? 'Delete failed.');
-        }
-    })
-    .catch(() => alert('Delete request failed.'));
-}
+
+
 </script>
 <?= $this->endSection() ?>
