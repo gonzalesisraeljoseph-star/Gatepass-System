@@ -57,6 +57,11 @@ body{
     border:1px solid #e2e8f0;
     height:44px;
 }
+.badge-status{
+    font-size:11px;
+    padding:5px 10px;
+    border-radius:8px;
+}
 </style>
 
 
@@ -75,6 +80,10 @@ body{
 
     </div>
 
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger"><?= esc($error) ?></div>
+    <?php endif; ?>
+
     <div class="card-box">
 
         <div class="p-3">
@@ -91,6 +100,29 @@ body{
                                 <th>Assigned To</th>
                             </tr>
                         </thead>
+                        <tbody>
+                            <?php if (empty($hardware)): ?>
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">No accessories assigned.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($hardware as $item): ?>
+                                    <tr>
+                                        <td><?= esc($item['asset_tag']) ?></td>
+                                        <td><?= esc($item['name']) ?></td>
+                                        <td><?= esc($item['category']) ?></td>
+                                        <td><?= esc($item['model']) ?></td>
+                                        <td><?= esc($item['serial']) ?></td>
+                                        <td>
+                                            <span class="badge badge-status bg-<?= $item['status_meta'] === 'deployed' ? 'success' : 'secondary' ?>">
+                                                <?= esc($item['status']) ?>
+                                            </span>
+                                        </td>
+                                        <td><?= esc($item['assigned_to']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
           </table>
         </div>
 
