@@ -86,6 +86,15 @@ textarea.form-control {
 
 .badge-active { background: #22c55e !important; }
 .badge-inactive { background: #ef4444 !important; }
+
+#confirmSaveSummary li {
+    padding: 4px 0;
+    border-bottom: 1px dashed #eef2f7;
+}
+
+#confirmSaveSummary li:last-child {
+    border-bottom: none;
+}
 </style>
 
 <div class="body-wrapper">
@@ -256,6 +265,28 @@ textarea.form-control {
   </div>
 </div>
 
+<!-- Confirm Save Modal (validation summary before committing) -->
+<div class="modal fade" id="confirmSaveModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Details</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Please confirm the details below before saving:</p>
+        <ul class="list-unstyled mb-0" id="confirmSaveSummary">
+          <!-- filled in via JS -->
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Go Back</button>
+        <button type="button" class="btn btn-primary" id="confirmSaveBtn">Confirm &amp; Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -307,6 +338,12 @@ function updateTableInfo() {
         : `Showing ${start} to ${end} of ${total} entries`;
 
     rowsSelect.value = info.length === -1 ? 'all' : String(info.length);
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
 }
 
 $(document).ready(function () {
@@ -364,8 +401,20 @@ $(document).ready(function () {
     usersTable.on('draw', updateTableInfo);
     updateTableInfo();
 
+    // Instead of saving immediately, validate then show the confirm-save modal.
     $('#userForm').on('submit', function (e) {
         e.preventDefault();
+
+        if (!this.checkValidity()) {
+            this.reportValidity();
+            return;
+        }
+
+        showConfirmSaveModal();
+    });
+
+    $('#confirmSaveBtn').on('click', function () {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmSaveModal')).hide();
         saveUser();
     });
 
@@ -397,8 +446,6 @@ function openEditModal(row) {
     modal.show();
 }
 
-<<<<<<< Updated upstream
-=======
 function openDeleteModal(id, name, currentStatus) {
     selectedUserId = id;
     const action = currentStatus === 'active' ? 'deactivate' : 'activate';
@@ -465,7 +512,7 @@ function showConfirmSaveModal() {
     modal.show();
 }
 
->>>>>>> Stashed changes
+
 function saveUser() {
     const form = document.getElementById('userForm');
     const formData = new FormData(form);
