@@ -53,7 +53,7 @@ class Gatepass extends BaseController
 
     public function list()
     {
-        $db = \Config\Database::connect();
+        $db = \Config\Database::connect('gatepass');
 
         $data = $db->table('gatepass_requests g')
             ->select('g.*')

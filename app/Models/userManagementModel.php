@@ -366,6 +366,89 @@ class userManagementModel extends Model
     }
 
     /**
+     * Get the cached Snipe-IT user ID for a given ref_emp from gatepass.users.
+     * Returns null if it hasn't been resolved yet.
+     */
+    public function getSnipeitId(int $refEmp): ?int
+    {
+        $targetDb = \Config\Database::connect('gatepass');
+
+        $row = $targetDb->table('users')
+            ->select('snipeit_id')
+            ->where('id', $refEmp)
+            ->get()
+            ->getRowArray();
+
+        return isset($row['snipeit_id']) ? (int) $row['snipeit_id'] : null;
+    }
+
+    /**
+     * Resolve the Snipe-IT user ID for a given user. Checks the cached
+     * gatepass.users.snipeit_id column first; if empty, looks it up via the
+     * Snipe-IT API (employee_number -> username -> first/last name) and
+     * persists the result so future calls skip the API round trip entirely.
+     *
+     * Returns null if no match could be found (e.g. Snipe-IT unreachable,
+     * or no matching Snipe-IT user exists for this person) - this is not
+     * an error state, just "not linked yet".
+     */
+    public function resolveSnipeitId(int $refEmp, string $username, string $fullName): ?int
+    {
+        $cached = $this->getSnipeitId($refEmp);
+        if ($cached) {
+            return $cached;
+        }
+
+        [$firstName, $lastName] = $this->parseFullName($fullName);
+
+        try {
+            $service   = new \App\Libraries\HardwareApiService();
+            $snipeitId = $service->findUserId($username, $firstName, $lastName, (string) $refEmp);
+        } catch (\Throwable $e) {
+            log_message('error', "resolveSnipeitId: lookup failed for ref_emp {$refEmp}: " . $e->getMessage());
+            return null;
+        }
+
+        if ($snipeitId) {
+            \Config\Database::connect('gatepass')
+                ->table('users')
+                ->where('id', $refEmp)
+                ->update(['snipeit_id' => $snipeitId]);
+        }
+
+        return $snipeitId;
+    }
+
+    /**
+     * Parses "LASTNAME, FIRSTNAME MIDDLENAME" (the format used by
+     * v_profile_employee.full_name) into ['First', 'Last'].
+     * Falls back to treating the string as "First Last" if there's no comma.
+     */
+    protected function parseFullName(string $fullName): array
+    {
+        $fullName = trim($fullName);
+
+        if ($fullName === '') {
+            return ['', ''];
+        }
+
+        if (str_contains($fullName, ',')) {
+            [$last, $rest] = array_map('trim', explode(',', $fullName, 2));
+            $rest  = preg_replace('/\s+/', ' ', $rest); // collapse double spaces
+            $first = explode(' ', $rest)[0] ?? '';
+
+            return [ucfirst(strtolower($first)), ucfirst(strtolower($last))];
+        }
+
+        // Fallback: "First Middle Last" - take first and last tokens
+        $tokens = preg_split('/\s+/', $fullName);
+        $first  = $tokens[0] ?? '';
+        $last   = end($tokens) ?: '';
+
+        return [ucfirst(strtolower($first)), ucfirst(strtolower($last))];
+    }
+
+    /**
      * Find a single user by username.
      */
     public function findByUsername(string $username)
