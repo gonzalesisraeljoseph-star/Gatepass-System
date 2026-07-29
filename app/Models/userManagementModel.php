@@ -21,7 +21,6 @@ class userManagementModel extends Model
         'username',
         'md5_password',
         'ref_emp',
-        'flag'
     ];
 
     // Timestamps
@@ -147,36 +146,38 @@ class userManagementModel extends Model
      * Get all users ordered by most recent first.
      */
     public function getAllUsersDetails()
-{
-    $db = \Config\Database::connect(); // default group = hris_system
+    {
+        $db = \Config\Database::connect(); // default group = hris_system
 
-    $users = $db->table('tbl_user_info u')
-        ->select("u.id, u.username, u.ref_emp, u.flag,
-                    e.full_name as employee,
-                    e.department_name as department,
-                    e.position_name as position,
-                    '' as email")
-        ->join('v_profile_employee e', 'e.profile_id = u.ref_emp', 'left')
-        ->orderBy('u.id', 'ASC')
-        ->get()
-        ->getResultArray();
+        $users = $db->table('tbl_user_info u')
+            ->select("u.id, u.username, u.ref_emp,
+                        e.full_name as employee,
+                        e.department_name as department,
+                        e.position_name as position,
+                        '' as email,
+                        'active' as status")
+            ->join('v_profile_employee e', 'e.profile_id = u.ref_emp', 'left')
+            ->orderBy('u.id', 'ASC')
+            ->get()
+            ->getResultArray();
 
-    $gatepassDb = \Config\Database::connect('gatepass');
-    $roleRows = $gatepassDb->table('user_roles ur')
-        ->select('ur.user_id, r.role_description')
-        ->join('role r', 'r.role_id = ur.role_id')
-        ->get()
-        ->getResultArray();
+        // Pull the actual assigned system role from the target (gatepass) DB,
+        // keyed by ref_emp (which is what user_roles.user_id stores).
+        $gatepassDb = \Config\Database::connect('gatepass');
+        $roleRows = $gatepassDb->table('user_roles ur')
+            ->select('ur.user_id, r.role_description')
+            ->join('role r', 'r.role_id = ur.role_id')
+            ->get()
+            ->getResultArray();
 
-    $roleMap = array_column($roleRows, 'role_description', 'user_id');
+        $roleMap = array_column($roleRows, 'role_description', 'user_id');
 
-    foreach ($users as &$user) {
-        $user['role']   = $roleMap[$user['ref_emp']] ?? '';
-        $user['status'] = $user['flag'] == 1 ? 'active' : 'inactive';
+        foreach ($users as &$user) {
+            $user['role'] = $roleMap[$user['ref_emp']] ?? '';
+        }
+
+        return $users;
     }
-
-    return $users;
-}
 
     /**
      * Get the list of departments.
@@ -473,25 +474,6 @@ class userManagementModel extends Model
             'user'       => $user,
             'role'       => $this->getRoles(),
             'department' => $this->getDepartments(),
-            'status'     => $user['flag'] == 1 ? 'active' : 'inactive',
         ];
-    }
-
-    /**
-     * Toggle a user's flag between 0 (INACTIVE) and 1 (ACTIVE).
-     * Returns the new flag value, or null if the user wasn't found.
-     */
-    public function toggleFlag($id)
-    {
-        $user = $this->find($id);
-
-        if (!$user) {
-            return null;
-        }
-
-        $newFlag = $user['flag'] == 1 ? 0 : 1;
-        $this->update($id, ['flag' => $newFlag]);
-
-        return $newFlag;
     }
 }
