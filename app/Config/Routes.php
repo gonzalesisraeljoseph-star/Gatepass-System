@@ -27,6 +27,7 @@ $routes->post('gatepass/store', 'Pages\Gatepass::store');
 
 /** API */
 $routes->get('api/hardware', '\App\Controllers\Api\Hardware::getHardware');
+$routes->get('api/hardware/mine', 'Api\HardwareController::mine');
 
 /** User Management  */
 $routes->get('/user-management', 'Pages\UserManagement::index');

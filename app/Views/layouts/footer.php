@@ -117,6 +117,11 @@ function renderGatepassStatus(status) {
 function loadDevices() {
     $.get("<?= base_url('api/hardware') ?>", function (res) {
 
+        if (res.message && (!res.rows || res.rows.length === 0)) {
+            console.warn('loadDevices:', res.message);
+        }
+
+
         let options = '';
 
         if (res.rows) {
