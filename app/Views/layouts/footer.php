@@ -149,26 +149,36 @@ function initSelect2() {
 </script>
 
 <script>
+// Generalized dropdown-toggle for the sidebar: works for however many
+// modules have sub_modules (the DB decides that, not a fixed id like
+// #setupMenu), instead of hardcoding one module's collapse id.
 document.addEventListener('DOMContentLoaded', function() {
-    const trigger = document.querySelector('[href="#setupMenu"]');
-    const menu = document.querySelector('#setupMenu');
+    document.querySelectorAll('.sidebar-menu [data-bs-toggle="dropdown"]').forEach(function (trigger) {
 
-    trigger.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const isOpen = this.getAttribute('aria-expanded') === 'true';
-        
-        if (isOpen) {
-            menu.classList.remove('show');
-            this.setAttribute('aria-expanded', 'false');
-        } else {
-            menu.classList.add('show');
-            this.setAttribute('aria-expanded', 'true');
-        }
+        const targetSelector = trigger.getAttribute('href');
+        const menu = targetSelector ? document.querySelector(targetSelector) : null;
+        if (!menu) return;
+
+        trigger.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const isOpen = this.getAttribute('aria-expanded') === 'true';
+
+            if (isOpen) {
+                menu.classList.remove('show');
+                this.setAttribute('aria-expanded', 'false');
+            } else {
+                menu.classList.add('show');
+                this.setAttribute('aria-expanded', 'true');
+            }
+        });
     });
 });
 </script>
+
+</div> <!-- /.page-wrapper (opened in sidebar.php) -->
+</div> <!-- /#main-wrapper (opened in header.php) -->
 
 </body>
 
