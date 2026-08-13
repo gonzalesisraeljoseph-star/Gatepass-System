@@ -4,3 +4,8 @@
 <?= $this->renderSection('content') ?>
 
 <?= view('layouts/footer') ?>
+
+<?= $this->renderSection('scripts') ?>
+
+</body>
+</html>

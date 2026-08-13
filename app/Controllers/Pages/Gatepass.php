@@ -19,50 +19,61 @@ class Gatepass extends BaseController
     }
 
     public function store()
-    {
-        $db = \Config\Database::connect();
+{
+    $db = \Config\Database::connect('gatepass');
 
-        $requestorId        = session()->get('logged_in')['ref_emp'];
-        $reason             = $this->request->getPost('reason');
-        $devices            = $this->request->getPost('devices');
-        $requestor_name     = $this->request->getPost('requestor_name');
+    $requestorId    = session()->get('logged_in')['ref_emp'];
+    $reason         = $this->request->getPost('reason');
+    $devices        = $this->request->getPost('devices');
+    $requestor_name = $this->request->getPost('requestor_name');
 
-        $db->table('gatepass_requests')->insert([
-            'requestor_id'      => $requestorId,
-            'reason'            => $reason,
-            'requestor_name'    => $requestor_name,
-            'status'            => 'Pending'
-        ]);
+    $db->table('gatepass_requests')->insert([
+        'requestor_id'   => $requestorId,
+        'reason'         => $reason,
+        'requestor_name' => $requestor_name,
+        'status'         => 'Pending'
+    ]);
 
-        $gatepassId = $db->insertID();
+    $gatepassId = $db->insertID();
 
-        if (!empty($devices)) {
-            foreach ($devices as $deviceId) {
-                $db->table('gatepass_request_items')->insert([
-                    'gatepass_id' => $gatepassId,
-                    'device_id'   => $deviceId
-                ]);
-            }
+    if (!empty($devices)) {
+        foreach ($devices as $deviceId) {
+            $db->table('gatepass_request_items')->insert([
+                'gatepass_id' => $gatepassId,
+                'device_id'   => $deviceId
+            ]);
         }
-
-        return $this->response->setJSON([
-            'status' => true,
-            'message' => 'Gatepass request submitted successfully'
-        ]);
     }
+
+    return $this->response->setJSON([
+        'status'  => true,
+        'message' => 'Gatepass request submitted successfully'
+    ]);
+}
 
     public function list()
-    {
-        $db = \Config\Database::connect();
+{
+    $sessionData = session()->get('logged_in');
+    $refEmp = $sessionData['ref_emp'] ?? null;
 
-        $data = $db->table('gatepass_requests g')
-            ->select('g.*')
-            ->orderBy('g.id', 'DESC')
-            ->get()
-            ->getResultArray();
-
+    if (!$refEmp) {
         return $this->response->setJSON([
-            "data" => $data
-        ]);
+            "status"  => false,
+            "message" => "Not logged in"
+        ])->setStatusCode(401);
     }
+
+    $db = \Config\Database::connect('gatepass');
+
+    $data = $db->table('gatepass_requests g')
+        ->select('g.*')
+        ->where('g.requestor_id', $refEmp)
+        ->orderBy('g.id', 'DESC')
+        ->get()
+        ->getResultArray();
+
+    return $this->response->setJSON([
+        "data" => $data
+    ]);
+}
 }
