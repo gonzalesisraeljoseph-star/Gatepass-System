@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class userManagementModel extends Model
 {
-    protected $table            = 'tbl_user_info'; // lives in the 'default' group (hris_system)
+    protected $table            = 'tbl_user_info'; // lives in the 'default' group (hri     s_system)
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
@@ -165,12 +165,12 @@ class userManagementModel extends Model
         // keyed by ref_emp (which is what user_roles.user_id stores).
         $gatepassDb = \Config\Database::connect('gatepass');
         $roleRows = $gatepassDb->table('user_roles ur')
-            ->select('ur.user_id, r.role_description')
+            ->select('ur.user_id, r.role_desc')
             ->join('role r', 'r.role_id = ur.role_id')
             ->get()
             ->getResultArray();
 
-        $roleMap = array_column($roleRows, 'role_description', 'user_id');
+        $roleMap = array_column($roleRows, 'role_desc', 'user_id');
 
         foreach ($users as &$user) {
             $user['role'] = $roleMap[$user['ref_emp']] ?? '';
@@ -202,9 +202,9 @@ class userManagementModel extends Model
         $db = \Config\Database::connect('gatepass'); // target DB - role table lives here
 
         return $db->table('role')
-            ->select('role_description as name')
-            ->where('role_description !=', '')
-            ->orderBy('role_description', 'ASC')
+            ->select('role_desc as name')
+            ->where('role_desc !=', '')
+            ->orderBy('role_desc', 'ASC')
             ->get()
             ->getResultArray();
     }
@@ -229,7 +229,7 @@ class userManagementModel extends Model
         $targetDb = \Config\Database::connect('gatepass');
 
         $role = $targetDb->table('role')
-            ->where('role_description', $roleDescription)
+            ->where('role_desc', $roleDescription)
             ->get()
             ->getRowArray();
 

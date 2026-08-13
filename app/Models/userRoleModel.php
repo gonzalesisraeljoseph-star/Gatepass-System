@@ -6,6 +6,7 @@ use CodeIgniter\Model;
 
 class userRoleModel extends Model
 {
+    protected $DBGroup       = 'gatepass';
     protected $table         = 'user_roles';
     protected $primaryKey    = 'id';
     protected $allowedFields = ['user_id', 'role_id'];

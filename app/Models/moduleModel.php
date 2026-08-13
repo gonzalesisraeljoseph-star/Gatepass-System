@@ -6,6 +6,7 @@ use CodeIgniter\Model;
 
 class moduleModel extends Model
 {
+    protected $DBGroup = 'gatepass';
     protected $table         = 'modules';
     protected $primaryKey    = 'module_id';
     protected $allowedFields = ['module_name', 'archived'];
