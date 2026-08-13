@@ -13,7 +13,7 @@ if (! function_exists('module_slug')) {
     function module_slug(string $label): string
     {
         $overrides = [
-            // 'Request' => 'gatepass',
+             'Request' => 'gatepass',
         ];
 
         if (isset($overrides[$label])) {

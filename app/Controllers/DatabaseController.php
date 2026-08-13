@@ -10,7 +10,7 @@ class DatabaseController extends BaseController
       $db1 = db_connect();
       $model = new customModel($db1);
 
-      $db2 = db_connect('hris');
+      $db2 = db_connect('gatepass');
       $model2 = new customModel($db2);
     }
 }

@@ -5,7 +5,8 @@ namespace App\Models;
 use CodeIgniter\Model;
 
 class subModuleModel extends Model
-{
+{   
+    protected $DBGroup = 'gatepass';
     protected $table         = 'sub_modules';
     protected $primaryKey    = 'sub_module_id';
     protected $allowedFields = ['module_id', 'sub_module_desc', 'archived'];

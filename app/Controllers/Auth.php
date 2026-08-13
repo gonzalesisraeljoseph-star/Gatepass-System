@@ -62,12 +62,9 @@ class Auth extends BaseController
             ])->setStatusCode(401);
         }
 
-        // RBAC: role_ids come from db_gatepass.user_roles, keyed by ref_emp
-        // (same identifier the rest of the app already scopes by), not the
-        // local `users` table (that one's just the Snipe-IT id cache).
         $roleIds = (new UserRoleModel())->roleIdsForUser((int) $user->ref_emp);
 
-       $this->session->set('logged_in', [
+        $this->session->set('logged_in', [
             'ref_emp'         => $user->ref_emp,
             'username'        => $user->username,
             'full_name'       => $user->full_name,
@@ -75,6 +72,8 @@ class Auth extends BaseController
             'department_name' => $user->department_name,
             'role_ids'        => $roleIds,
         ]);
+
+        
 
         $key  = getenv('JWT_SECRET');
         $time = time();
@@ -100,7 +99,6 @@ class Auth extends BaseController
                 'ref_emp'   => $user->ref_emp,
                 'username'  => $user->username,
                 'full_name' => $user->full_name
-
             ]
         ]);
     }

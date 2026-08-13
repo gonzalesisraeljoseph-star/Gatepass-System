@@ -20,10 +20,7 @@ helper('menu');
 $roleIds = session()->get('logged_in')['role_ids'] ?? [];
 $menu    = (new \App\Models\ModuleModel())->menuForRoles($roleIds);
 ?>
-<?php
-$dbg = session()->get('logged_in');
-echo '<!-- DEBUG role_ids: ' . json_encode($dbg['role_ids'] ?? 'NOT SET') . ' | menu count: ' . count($menu) . ' | ref_emp: ' . ($dbg['ref_emp'] ?? 'NONE') . ' -->';
-?>
+
 <aside class="left-sidebar modern-sidebar">
 
     <!-- Logo -->
