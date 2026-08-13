@@ -1,12 +1,29 @@
-<body>
+<?php
+/**
+ * Sidebar nav - fully DB-driven off `modules` / `sub_modules` / `role_module`
+ * / `role_submodule`. Nothing here names a specific module: whatever
+ * role_ids are in the session get whatever rows role_module/role_submodule
+ * grant them.
+ *
+ * role_ids comes from session('logged_in')['role_ids'], set at login in
+ * Auth::login() via UserRoleModel::roleIdsForUser($refEmp).
+ *
+ * There's no module_url/module_icon column in the DB, so:
+ *  - the route is derived from the label via module_slug() (see
+ *    app/Helpers/menu_helper.php) - fix the $overrides map there if a
+ *    module's real route doesn't match its name
+ *  - no icon is rendered; add an <iconify-icon> back in once/if an icon
+ *    column exists
+ */
+helper('menu');
 
-<div class="preloader">
-    <img src="<?= base_url('assets/images/logo.png') ?>"
-         alt="loader"
-         class="lds-ripple img-fluid" />
-</div>
-
-<div id="main-wrapper">
+$roleIds = session()->get('logged_in')['role_ids'] ?? [];
+$menu    = (new \App\Models\ModuleModel())->menuForRoles($roleIds);
+?>
+<?php
+$dbg = session()->get('logged_in');
+echo '<!-- DEBUG role_ids: ' . json_encode($dbg['role_ids'] ?? 'NOT SET') . ' | menu count: ' . count($menu) . ' | ref_emp: ' . ($dbg['ref_emp'] ?? 'NONE') . ' -->';
+?>
 <aside class="left-sidebar modern-sidebar">
 
     <!-- Logo -->
@@ -31,71 +48,38 @@
         </div>
 
         <ul class="sidebar-menu">
-
-            <li>
-                <a href="<?= base_url('dashboard') ?>" class="sidebar-link <?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
-                    <iconify-icon icon="solar:home-2-bold-duotone"></iconify-icon>
-                    <span>Dashboard System</span>
+          <?php foreach ($menu as $module): ?>
+            <?php $slug = module_slug($module['module_name']); ?>
+            <?php if (empty($module['sub_modules'])): ?>
+              <li>
+                <a href="<?= base_url($slug) ?>"
+                   class="sidebar-link <?= (uri_string() == $slug) ? 'active' : '' ?>">
+                  <span><?= esc($module['module_name']) ?></span>
                 </a>
-            </li>
-
-           <li>
-                <a href="<?= base_url('gatepass') ?>" class="sidebar-link <?= (uri_string() == 'gatepass') ? 'active' : '' ?>">
-                    <iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon>
-                    <span> Request</span>
+              </li>
+            <?php else: ?>
+              <li nav-item dropdown>
+                <a class="sidebar-link" data-bs-toggle="dropdown" href="#module<?= $module['module_id'] ?>" role="button">
+                  <span><?= esc($module['module_name']) ?></span>
+                  <iconify-icon icon="solar:alt-arrow-down-bold" class="ms-auto collapse-arrow"></iconify-icon>
                 </a>
-            </li>
-
-            <li>
-                <a href="<?= base_url('accessories') ?>" class="sidebar-link <?= (uri_string() == 'accessories') ? 'active' : '' ?>">
-                    <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
-                    <span>Accessories</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="#" class="sidebar-link">
-                    <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
-                    <span>Approvals</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="#" class="sidebar-link">
-                    <iconify-icon icon="solar:chart-bold-duotone"></iconify-icon>
-                    <span>Reports</span>
-                </a>
-            </li>
-
-             <li nav-item dropdown>
-    <a class="sidebar-link " data-bs-toggle="dropdown" href="#setupMenu" role="button" >
-        <iconify-icon icon="solar:settings-minimalistic-bold-duotone"></iconify-icon>
-        <span>Setup</span>
-        <iconify-icon icon="solar:alt-arrow-down-bold" class="ms-auto collapse-arrow"></iconify-icon>
-    </a>
-    <div class="collapse" id="setupMenu">
-    <ul class="list-unstyled ps-4 mt-1">
-        <li>
-            <a href="<?= base_url('template') ?>" class="sidebar-link <?= (uri_string() == 'template') ? 'active' : '' ?>">
-                <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
-                <span>Template</span>
-            </a>
-        </li>
-        <li>
-            <a href="<?= base_url('user-management') ?>" class="sidebar-link <?= (uri_string() == 'user-management') ? 'active' : '' ?>">
-                <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
-                <span>User Management</span>
-            </a>
-        </li>
-        <li>
-            <a href="#" class="sidebar-link py-2">
-                <iconify-icon icon="solar:clipboard-check-bold-duotone"></iconify-icon>
-                <span>Approving Officers</span>
-            </a>
-        </li>
-    </ul>
-
-</div>
+                <div class="collapse" id="module<?= $module['module_id'] ?>">
+                  <ul class="list-unstyled ps-4 mt-1">
+                    <?php foreach ($module['sub_modules'] as $sub): ?>
+                      <?php $subSlug = module_slug($sub['sub_module_desc']); ?>
+                      <li>
+                        <a href="<?= base_url($subSlug) ?>"
+                           class="sidebar-link <?= (uri_string() == $subSlug) ? 'active' : '' ?>">
+                          <span><?= esc($sub['sub_module_desc']) ?></span>
+                        </a>
+                      </li>
+                    <?php endforeach; ?>
+                  </ul>
+                </div>
+              </li>
+            <?php endif; ?>
+          <?php endforeach; ?>
+        </ul>
 
         <div class="sidebar-title mt-4">
             ACCOUNT
@@ -131,29 +115,23 @@
             <div class="d-none d-lg-block">
                 <div class="brand-logo d-flex align-items-center justify-content-between">
                     <a href="#" class="text-nowrap logo-img d-flex align-items-center gap-2">
-                        <!-- Logo Icon -->
                         <div class="logo-icon bg-primary text-white d-flex align-items-center justify-content-center rounded-circle fw-bold"
                             style="width:45px;height:45px;font-size:24px;">
                             G
                         </div>
-                        <!-- Logo Text -->
                         <span class="logo-text text-white fw-bold fs-5">
                             GATEPASS SYSTEM
                         </span>
-
                     </a>
                 </div>
             </div>
 
             <ul class="navbar-nav gap-2">
-
               <li class="nav-item nav-icon-hover-bg rounded-circle">
                 <a class="nav-link nav-icon-hover sidebartoggler" id="headerCollapse" href="javascript:void(0)">
                   <iconify-icon icon="solar:list-bold"></iconify-icon>
                 </a>
               </li>
-           
-
             </ul>
 
             <div class="d-block d-lg-none">
@@ -176,9 +154,7 @@
             </ul>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
               <div class="d-flex align-items-center justify-content-between py-2 py-lg-0">
-               
                 <ul class="navbar-nav gap-2 flex-row ms-auto align-items-center justify-content-center">
-             
 
                   <li class="nav-item hover-dd dropdown nav-icon-hover-bg rounded-circle d-none d-lg-block">
                     <a class="nav-link nav-icon-hover waves-effect waves-dark" href="javascript:void(0)" id="drop2" aria-expanded="false">
@@ -189,7 +165,6 @@
                       </div>
                     </a>
                     <div class="dropdown-menu py-0 content-dd  dropdown-menu-animate-up overflow-hidden dropdown-menu-end" aria-labelledby="drop2">
-
                       <div class="py-3 px-4 bg-primary">
                         <div class="mb-0 fs-6 fw-medium text-white">Notifications</div>
                         <div class="mb-0 fs-2 fw-medium text-white">You have 0 Notifications</div>
@@ -207,7 +182,6 @@
                             <span class="fs-2 d-block text-truncate text-muted">Just see the my new admin!</span>
                           </div>
                         </a>
- 
                       </div>
                       <div class="p-3">
                         <a class="d-flex btn btn-primary  align-items-center justify-content-center gap-2" href="javascript:void(0);">
@@ -215,7 +189,6 @@
                           <iconify-icon icon="solar:alt-arrow-right-outline" class="iconify-sm"></iconify-icon>
                         </a>
                       </div>
-
                     </div>
                   </li>
 
@@ -240,7 +213,6 @@
                                 My Profile
                               </a>
                             </div>
-                         
                           </div>
                           <hr>
                           <div class="px-3">
@@ -257,7 +229,6 @@
                                 </a>
                               </div>
                             </div>
-                        
                             <div class="h6 mb-0 dropdown-item py-8 px-3 rounded-2 link">
                               <a href="<?= base_url('logout') ?>" class=" d-flex  align-items-center ">
                                 Sign Out
@@ -265,17 +236,13 @@
                             </div>
                           </div>
                         </div>
-
                       </div>
                     </div>
                   </li>
-
 
                 </ul>
               </div>
             </div>
           </nav>
-
         </div>
-    
       </header>
