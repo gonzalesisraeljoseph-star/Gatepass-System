@@ -46,36 +46,36 @@ $menu    = (new \App\Models\ModuleModel())->menuForRoles($roleIds);
 
         <ul class="sidebar-menu">
           <?php foreach ($menu as $module): ?>
-            <?php $slug = module_slug($module['module_name']); ?>
-            <?php if (empty($module['sub_modules'])): ?>
+    <?php $slug = module_slug($module['module_name']); ?>
+    <?php if (empty($module['sub_modules'])): ?>
+      <li>
+        <a href="<?= base_url($slug) ?>"
+           class="sidebar-link <?= (uri_string() == $slug) ? 'active' : '' ?>">
+          <span><?= esc($module['module_name']) ?></span>
+        </a>
+      </li>
+    <?php else: ?>
+      <li nav-item dropdown>
+        <a class="sidebar-link" data-bs-toggle="dropdown" href="#module<?= $module['module_id'] ?>" role="button">
+          <span><?= esc($module['module_name']) ?></span>
+          <iconify-icon icon="solar:alt-arrow-down-bold" class="ms-auto collapse-arrow"></iconify-icon>
+        </a>
+        <div class="collapse" id="module<?= $module['module_id'] ?>">
+          <ul class="list-unstyled ps-4 mt-1">
+            <?php foreach ($module['sub_modules'] as $sub): ?>
+              <?php $subSlug = submodule_slug($sub['sub_module_desc']); ?>   <!-- ← replace this line -->
               <li>
-                <a href="<?= base_url($slug) ?>"
-                   class="sidebar-link <?= (uri_string() == $slug) ? 'active' : '' ?>">
-                  <span><?= esc($module['module_name']) ?></span>
+                <a href="<?= base_url($subSlug) ?>"
+                   class="sidebar-link <?= (uri_string() == $subSlug) ? 'active' : '' ?>">
+                  <span><?= esc($sub['sub_module_desc']) ?></span>
                 </a>
               </li>
-            <?php else: ?>
-              <li nav-item dropdown>
-                <a class="sidebar-link" data-bs-toggle="dropdown" href="#module<?= $module['module_id'] ?>" role="button">
-                  <span><?= esc($module['module_name']) ?></span>
-                  <iconify-icon icon="solar:alt-arrow-down-bold" class="ms-auto collapse-arrow"></iconify-icon>
-                </a>
-                <div class="collapse" id="module<?= $module['module_id'] ?>">
-                  <ul class="list-unstyled ps-4 mt-1">
-                    <?php foreach ($module['sub_modules'] as $sub): ?>
-                      <?php $subSlug = module_slug($sub['sub_module_desc']); ?>
-                      <li>
-                        <a href="<?= base_url($subSlug) ?>"
-                           class="sidebar-link <?= (uri_string() == $subSlug) ? 'active' : '' ?>">
-                          <span><?= esc($sub['sub_module_desc']) ?></span>
-                        </a>
-                      </li>
-                    <?php endforeach; ?>
-                  </ul>
-                </div>
-              </li>
-            <?php endif; ?>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      </li>
+    <?php endif; ?>
+<?php endforeach; ?>
         </ul>
 
         <div class="sidebar-title mt-4">
