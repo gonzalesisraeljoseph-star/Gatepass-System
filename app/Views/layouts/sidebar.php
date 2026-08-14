@@ -31,71 +31,38 @@
         </div>
 
         <ul class="sidebar-menu">
-
-            <li>
-                <a href="<?= base_url('dashboard') ?>" class="sidebar-link <?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
-                    <iconify-icon icon="solar:home-2-bold-duotone"></iconify-icon>
-                    <span>Dashboard System</span>
+          <?php foreach ($menu as $module): ?>
+    <?php $slug = module_slug($module['module_name']); ?>
+    <?php if (empty($module['sub_modules'])): ?>
+      <li>
+        <a href="<?= base_url($slug) ?>"
+           class="sidebar-link <?= (uri_string() == $slug) ? 'active' : '' ?>">
+          <span><?= esc($module['module_name']) ?></span>
+        </a>
+      </li>
+    <?php else: ?>
+      <li nav-item dropdown>
+        <a class="sidebar-link" data-bs-toggle="dropdown" href="#module<?= $module['module_id'] ?>" role="button">
+          <span><?= esc($module['module_name']) ?></span>
+          <iconify-icon icon="solar:alt-arrow-down-bold" class="ms-auto collapse-arrow"></iconify-icon>
+        </a>
+        <div class="collapse" id="module<?= $module['module_id'] ?>">
+          <ul class="list-unstyled ps-4 mt-1">
+            <?php foreach ($module['sub_modules'] as $sub): ?>
+              <?php $subSlug = submodule_slug($sub['sub_module_desc']); ?>   <!-- ← replace this line -->
+              <li>
+                <a href="<?= base_url($subSlug) ?>"
+                   class="sidebar-link <?= (uri_string() == $subSlug) ? 'active' : '' ?>">
+                  <span><?= esc($sub['sub_module_desc']) ?></span>
                 </a>
-            </li>
-
-           <li>
-                <a href="<?= base_url('gatepass') ?>" class="sidebar-link <?= (uri_string() == 'gatepass') ? 'active' : '' ?>">
-                    <iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon>
-                    <span> Request</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="<?= base_url('accessories') ?>" class="sidebar-link <?= (uri_string() == 'accessories') ? 'active' : '' ?>">
-                    <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
-                    <span>Accessories</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="#" class="sidebar-link">
-                    <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
-                    <span>Approvals</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="#" class="sidebar-link">
-                    <iconify-icon icon="solar:chart-bold-duotone"></iconify-icon>
-                    <span>Reports</span>
-                </a>
-            </li>
-
-             <li nav-item dropdown>
-    <a class="sidebar-link " data-bs-toggle="dropdown" href="#setupMenu" role="button" >
-        <iconify-icon icon="solar:settings-minimalistic-bold-duotone"></iconify-icon>
-        <span>Setup</span>
-        <iconify-icon icon="solar:alt-arrow-down-bold" class="ms-auto collapse-arrow"></iconify-icon>
-    </a>
-    <div class="collapse" id="setupMenu">
-    <ul class="list-unstyled ps-4 mt-1">
-        <li>
-            <a href="<?= base_url('template') ?>" class="sidebar-link <?= (uri_string() == 'template') ? 'active' : '' ?>">
-                <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
-                <span>Template</span>
-            </a>
-        </li>
-        <li>
-            <a href="<?= base_url('user-management') ?>" class="sidebar-link <?= (uri_string() == 'user-management') ? 'active' : '' ?>">
-                <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
-                <span>User Management</span>
-            </a>
-        </li>
-        <li>
-            <a href="#" class="sidebar-link py-2">
-                <iconify-icon icon="solar:clipboard-check-bold-duotone"></iconify-icon>
-                <span>Approving Officers</span>
-            </a>
-        </li>
-    </ul>
-
-</div>
+              </li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      </li>
+    <?php endif; ?>
+<?php endforeach; ?>
+        </ul>
 
         <div class="sidebar-title mt-4">
             ACCOUNT
