@@ -117,6 +117,11 @@ function renderGatepassStatus(status) {
 function loadDevices() {
     $.get("<?= base_url('api/hardware') ?>", function (res) {
 
+        if (res.message && (!res.rows || res.rows.length === 0)) {
+            console.warn('loadDevices:', res.message);
+        }
+
+
         let options = '';
 
         if (res.rows) {
@@ -143,132 +148,38 @@ function initSelect2() {
 }
 </script>
 
-
-
 <script>
-let hardwareTable;
-
-$(function () {
-    initTable();
-    bindEvents();
-});
-
-function initTable() {
-
-    hardwareTable = $('#hardwareTable').DataTable({
-        ajax: {
-            url: "<?= base_url('api/hardware') ?>",
-            dataSrc: function (json) {
-                updateSummary(json);
-                return json.rows ?? [];
-            }
-        },
-
-        pageLength: 10,
-        responsive: true,
-        order: [[1, 'asc']],
-
-        columns: [
-            { data: 'asset_tag', defaultContent: '-' },
-            { data: 'name', defaultContent: '-' },
-
-            {
-                data: row => row.category?.name ?? '-'
-            },
-
-            {
-                data: row => row.model?.name ?? '-'
-            },
-
-            { data: 'serial', defaultContent: '-' },
-
-            {
-                data: row => renderStatus(row.status_label?.name)
-            },
-
-            {
-                data: row => row.assigned_to?.name ?? 'Unassigned'
-            }
-        ]
-    });
-}
-
-function renderStatus(status) {
-
-    const map = {
-        'Deployed': 'success',
-        'Ready to Deploy': 'warning',
-        'Pending': 'info'
-    };
-
-    const badge = map[status] ?? 'secondary';
-
-    return `
-        <span class="badge bg-${badge}">
-            ${status ?? 'Unknown'}
-        </span>
-    `;
-}
-
-function bindEvents() {
-
-    $('#customSearch').on('keyup', function () {
-        hardwareTable.search(this.value).draw();
-    });
-
-    $('#refreshTable').on('click', function () {
-        hardwareTable.ajax.reload();
-    });
-
-    $(document).on('click', '.viewAsset', function () {
-        const id = $(this).data('id');
-        alert(`Selected Asset ID: ${id}`);
-    });
-}
-
-function updateSummary(response) {
-
-    let assigned = 0;
-    let deployed = 0;
-
-    (response.rows ?? []).forEach(item => {
-
-        if (item.assigned_to) assigned++;
-
-        if (item.status_label?.name === 'Deployed') {
-            deployed++;
-        }
-
-    });
-
-    $('#assignedAssets').text(assigned);
-    $('#deployAssets').text(deployed);
-}
-</script>
-
-<script>
+// Generalized dropdown-toggle for the sidebar: works for however many
+// modules have sub_modules (the DB decides that, not a fixed id like
+// #setupMenu), instead of hardcoding one module's collapse id.
 document.addEventListener('DOMContentLoaded', function() {
-    const trigger = document.querySelector('[href="#setupMenu"]');
-    const menu = document.querySelector('#setupMenu');
+    document.querySelectorAll('.sidebar-menu [data-bs-toggle="dropdown"]').forEach(function (trigger) {
 
-    trigger.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const isOpen = this.getAttribute('aria-expanded') === 'true';
-        
-        if (isOpen) {
-            menu.classList.remove('show');
-            this.setAttribute('aria-expanded', 'false');
-        } else {
-            menu.classList.add('show');
-            this.setAttribute('aria-expanded', 'true');
-        }
+        const targetSelector = trigger.getAttribute('href');
+        const menu = targetSelector ? document.querySelector(targetSelector) : null;
+        if (!menu) return;
+
+        trigger.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const isOpen = this.getAttribute('aria-expanded') === 'true';
+
+            if (isOpen) {
+                menu.classList.remove('show');
+                this.setAttribute('aria-expanded', 'false');
+            } else {
+                menu.classList.add('show');
+                this.setAttribute('aria-expanded', 'true');
+            }
+        });
     });
 });
 </script>
+
+</div> <!-- /.page-wrapper (opened in sidebar.php) -->
+</div> <!-- /#main-wrapper (opened in header.php) -->
 
 </body>
 
 </html>
-

@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
+use App\Models\UserRoleModel;
 use Firebase\JWT\JWT;
 
 class Auth extends BaseController
@@ -14,7 +15,7 @@ class Auth extends BaseController
         $this->session = session();
     }
 
-   
+
     public function index()
     {
         echo view('auth/header');
@@ -34,7 +35,7 @@ class Auth extends BaseController
             ])->setStatusCode(400);
         }
 
-        $db = \Config\Database::connect('hris');
+        $db = \Config\Database::connect();
 
         $user = $db->table('tbl_user_info u')
             ->select('
@@ -61,13 +62,18 @@ class Auth extends BaseController
             ])->setStatusCode(401);
         }
 
-       $this->session->set('logged_in', [
+        $roleIds = (new UserRoleModel())->roleIdsForUser((int) $user->ref_emp);
+
+        $this->session->set('logged_in', [
             'ref_emp'         => $user->ref_emp,
             'username'        => $user->username,
             'full_name'       => $user->full_name,
             'position_name'   => $user->position_name,
             'department_name' => $user->department_name,
+            'role_ids'        => $roleIds,
         ]);
+
+        
 
         $key  = getenv('JWT_SECRET');
         $time = time();
@@ -93,7 +99,6 @@ class Auth extends BaseController
                 'ref_emp'   => $user->ref_emp,
                 'username'  => $user->username,
                 'full_name' => $user->full_name
-
             ]
         ]);
     }
