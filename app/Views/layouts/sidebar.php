@@ -38,7 +38,7 @@ $menu    = (new \App\Models\ModuleModel())->menuForRoles($roleIds);
     </div>
 
     <!-- Navigation -->
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav scroll-sidebar" data-simplebar>
 
         <div class="sidebar-title">
             MAIN MENU
