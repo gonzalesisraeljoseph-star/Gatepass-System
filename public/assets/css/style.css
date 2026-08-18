@@ -27265,6 +27265,7 @@ ul {
     .left-sidebar
     .scroll-sidebar {
     height: calc(100vh - 50px);
+    min-height: 0; 
   }
   [data-layout="vertical"]
     body[data-sidebartype="mini-sidebar"]
