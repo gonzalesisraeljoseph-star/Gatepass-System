@@ -37,3 +37,10 @@ $routes->post('usermanagement/saveUser', 'Pages\UserManagement::saveUser');
 $routes->post('usermanagement/deleteUser/(:num)', 'Pages\UserManagement::deleteUser/$1');
 $routes->post('users/toggleStatus/(:num)', 'Pages\UserManagement::toggleStatus/$1');
 $routes->get('users/sync', 'Pages\UserManagement::syncUsers');
+
+// ---- Approvals (any logged-in approver) ----
+// ---- Approvals (any logged-in approver) ----
+    $routes->get('approvals', 'Approval\GatepassApprovals::inbox');
+    $routes->post('approvals/act', 'Approval\GatepassApprovals::act');
+    $routes->get('approvals/floating', 'Approval\GatepassApprovals::floating');
+    $routes->post('approvals/override', 'Approval\GatepassApprovals::override');

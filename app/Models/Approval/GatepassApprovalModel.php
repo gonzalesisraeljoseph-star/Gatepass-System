@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Approval;
 
 use CodeIgniter\Model;
 
-class gatepassApprovalModel extends Model
+class GatepassApprovalModel extends Model
 {
-    protected $DBGroup       = 'db_gatepass';
+    protected $DBGroup       = 'gatepass';
     protected $table         = 'gatepass_request_approvals';
     protected $primaryKey    = 'id';
     protected $allowedFields = [
