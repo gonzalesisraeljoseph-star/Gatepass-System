@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Controllers;
+namespace App\Controllers\Approval;
 
-use App\Libraries\GatepassRoleResolver;
-use App\Libraries\GatepassWorkflowEngine;
-use App\Models\GatepassApprovalModel;
+use App\Controllers\BaseController;
+use App\Libraries\Approval\GatepassApprovalService;
+use App\Libraries\Workflow\GatepassRoleResolver;
+use App\Models\Approval\GatepassApprovalModel;
 use Config\Database;
 
 /**
@@ -26,10 +27,10 @@ class GatepassApprovals extends BaseController
     {
         $userId = (int) (session('logged_in')['user_id'] ?? 0);
 
-        $approvalModel = new GatepassApprovalModel();
+        $approvalModel = new gatepassApprovalModel();
         $mySteps = $approvalModel->inboxFor($userId);
 
-        $db = Database::connect('db_gatepass');
+        $db = Database::connect('gatepass');
         $items = array_map(fn ($s) => [
             'step'    => $s,
             'request' => $db->table($this->requestsTable)->where('id', $s['request_id'])->get()->getRowArray(),
@@ -46,7 +47,7 @@ class GatepassApprovals extends BaseController
         $remarks   = $this->request->getPost('remarks') ?? '';
 
         try {
-            (new GatepassWorkflowEngine())->act($requestId, $userId, $decision, $remarks);
+            (new GatepassApprovalService())->act($requestId, $userId, $decision, $remarks);
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -64,7 +65,7 @@ class GatepassApprovals extends BaseController
         $canOverride = (new GatepassRoleResolver())->isOverrideCapable($userId);
 
         $approvalModel = new GatepassApprovalModel();
-        $db = Database::connect('db_gatepass');
+        $db = Database::connect('gatepass');
 
         $floatingSteps = $approvalModel->floating();
         $items = array_map(fn ($s) => [
@@ -87,7 +88,7 @@ class GatepassApprovals extends BaseController
         $decision  = $this->request->getPost('decision');
         $remarks   = $this->request->getPost('remarks') ?? '';
 
-        (new GatepassWorkflowEngine())->override($requestId, $userId, $decision, $remarks);
+        (new GatepassApprovalService())->override($requestId, $userId, $decision, $remarks);
 
         return redirect()->to('/gatepass/approvals/floating')->with('message', "Request #$requestId overridden ($decision).");
     }
