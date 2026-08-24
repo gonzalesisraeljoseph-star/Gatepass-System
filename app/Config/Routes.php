@@ -35,12 +35,23 @@ $routes->get('user-management/list', 'Pages\UserManagement::list');
 $routes->get('usermanagement/saveUser/(:num)', 'Pages\UserManagement::edituser/$1');
 $routes->post('usermanagement/saveUser', 'Pages\UserManagement::saveUser');
 $routes->post('usermanagement/deleteUser/(:num)', 'Pages\UserManagement::deleteUser/$1');
-$routes->post('users/toggleStatus/(:num)', 'Pages\UserManagement::toggleStatus/$1');
+$routes->post('users/toggleStatus/(:num)', 'Pages\Use   Management::toggleStatus/$1');
 $routes->get('users/sync', 'Pages\UserManagement::syncUsers');
 
 // ---- Approvals (any logged-in approver) ----
 // ---- Approvals (any logged-in approver) ----
-    $routes->get('approvals', 'Approval\GatepassApprovals::inbox');
-    $routes->post('approvals/act', 'Approval\GatepassApprovals::act');
-    $routes->get('approvals/floating', 'Approval\GatepassApprovals::floating');
-    $routes->post('approvals/override', 'Approval\GatepassApprovals::override');
+ $routes->get('approvals', 'Approval\GatepassApprovals::inbox');
+$routes->post('approvals/act', 'Approval\GatepassApprovals::act');
+$routes->get('approvals/floating', 'Approval\GatepassApprovals::floating');
+$routes->post('approvals/override', 'Approval\GatepassApprovals::override');
+
+// ---- Setup > Approving Sequence submodule (module_id 6, sub_module_id 3) ----
+// WorkflowBuilder itself checks role_submodule for (module_id=6,
+// sub_module_id=3) before allowing access - see the guard added to
+// WorkflowBuilder's constructor. Wrap in your existing 'auth' filter group
+// too if you gate all logged-in-only pages that way already.
+$routes->get('approving-sequence', 'Workflow\WorkflowBuilder::index');
+$routes->get('approving-sequence/(:num)', 'Workflow\WorkflowBuilder::show/$1');
+$routes->post('approving-sequence/save', 'Workflow\WorkflowBuilder::save');
+$routes->post('approving-sequence/validate', 'Workflow\WorkflowBuilder::validateGraph');
+$routes->post('approving-sequence/delete/(:num)', 'Workflow\WorkflowBuilder::destroy/$1');
