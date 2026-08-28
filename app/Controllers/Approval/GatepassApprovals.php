@@ -11,7 +11,9 @@ use Config\Database;
 /**
  * Approver-facing side of the workflow engine.
  *
- * Uses session('logged_in')['user_id'] per your existing session structure.
+ * Uses session('logged_in')['ref_emp'] per your existing session structure
+ * (matches Gatepass::store() and the rest of the app - the 'logged_in'
+ * array is keyed by ref_emp, not user_id).
  * Override capability is checked LIVE via GatepassRoleResolver rather than
  * trusting a session flag - your session doesn't currently set
  * 'can_override' at all (that column didn't exist until this module's
@@ -25,9 +27,9 @@ class GatepassApprovals extends BaseController
     /** My personal approvals inbox. */
     public function inbox()
     {
-        $userId = (int) (session('logged_in')['user_id'] ?? 0);
+        $userId = (int) (session('logged_in')['ref_emp'] ?? 0);
 
-        $approvalModel = new gatepassApprovalModel();
+        $approvalModel = new GatepassApprovalModel();
         $mySteps = $approvalModel->inboxFor($userId);
 
         $db = Database::connect('gatepass');
@@ -42,7 +44,7 @@ class GatepassApprovals extends BaseController
     public function act()
     {
         $requestId = (int) $this->request->getPost('request_id');
-        $userId    = (int) (session('logged_in')['user_id'] ?? 0); // never trust a posted user_id
+        $userId    = (int) (session('logged_in')['ref_emp'] ?? 0); // never trust a posted user_id
         $decision  = $this->request->getPost('decision'); // approved | rejected
         $remarks   = $this->request->getPost('remarks') ?? '';
 
@@ -52,7 +54,7 @@ class GatepassApprovals extends BaseController
             return redirect()->back()->with('error', $e->getMessage());
         }
 
-        return redirect()->to('/gatepass/approvals')->with('message', "Request #$requestId $decision.");
+        return redirect()->to('/approvals')->with('message', "Request #$requestId $decision.");
     }
 
     /**
@@ -61,7 +63,7 @@ class GatepassApprovals extends BaseController
      */
     public function floating()
     {
-        $userId      = (int) (session('logged_in')['user_id'] ?? 0);
+        $userId      = (int) (session('logged_in')['ref_emp'] ?? 0);
         $canOverride = (new GatepassRoleResolver())->isOverrideCapable($userId);
 
         $approvalModel = new GatepassApprovalModel();
@@ -78,7 +80,7 @@ class GatepassApprovals extends BaseController
 
     public function override()
     {
-        $userId = (int) (session('logged_in')['user_id'] ?? 0);
+        $userId = (int) (session('logged_in')['ref_emp'] ?? 0);
 
         if (!(new GatepassRoleResolver())->isOverrideCapable($userId)) {
             return redirect()->back()->with('error', 'You do not have override rights.');
@@ -90,6 +92,6 @@ class GatepassApprovals extends BaseController
 
         (new GatepassApprovalService())->override($requestId, $userId, $decision, $remarks);
 
-        return redirect()->to('/gatepass/approvals/floating')->with('message', "Request #$requestId overridden ($decision).");
+        return redirect()->to('/approvals/floating')->with('message', "Request #$requestId overridden ($decision).");
     }
 }

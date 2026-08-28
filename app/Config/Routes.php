@@ -44,3 +44,14 @@ $routes->get('users/sync', 'Pages\UserManagement::syncUsers');
     $routes->post('approvals/act', 'Approval\GatepassApprovals::act');
     $routes->get('approvals/floating', 'Approval\GatepassApprovals::floating');
     $routes->post('approvals/override', 'Approval\GatepassApprovals::override');
+
+
+    $routes->get('approving-sequence', 'Workflow\WorkflowBuilder::index');
+$routes->get('approving-sequence/(:num)', 'Workflow\WorkflowBuilder::show/$1');
+$routes->post('approving-sequence/save', 'Workflow\WorkflowBuilder::save');
+$routes->post('approving-sequence/validate', 'Workflow\WorkflowBuilder::validateGraph');
+$routes->post('approving-sequence/delete/(:num)', 'Workflow\WorkflowBuilder::destroy/$1');
+
+if (ENVIRONMENT === 'development') {
+    $routes->get('dev-login-as/(:segment)', 'Auth::devLoginAs/$1');
+}
