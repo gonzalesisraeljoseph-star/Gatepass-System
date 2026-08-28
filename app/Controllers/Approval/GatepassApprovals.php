@@ -54,7 +54,7 @@ class GatepassApprovals extends BaseController
             return redirect()->back()->with('error', $e->getMessage());
         }
 
-        return redirect()->to('/approvals')->with('message', "Request #$requestId $decision.");
+        return redirect()->to('approvals')->with('message', "Request #$requestId $decision.");
     }
 
     /**
