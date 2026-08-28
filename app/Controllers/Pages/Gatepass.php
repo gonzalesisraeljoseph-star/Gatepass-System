@@ -3,6 +3,7 @@
 namespace App\Controllers\Pages;
 
 use App\Controllers\BaseController;
+use App\Libraries\Workflow\GatepassWorkflowEngine;
 
 class Gatepass extends BaseController
 {
@@ -44,6 +45,11 @@ class Gatepass extends BaseController
             ]);
         }
     }
+
+    // Route the newly created request onto its workflow: resolves the
+    // assigned template, finds the first approver (or auto-approves if
+    // no workflow is wired), and inserts the pending approval row.
+    (new GatepassWorkflowEngine())->route($gatepassId, (int) $requestorId, 'gatepass');
 
     return $this->response->setJSON([
         'status'  => true,
