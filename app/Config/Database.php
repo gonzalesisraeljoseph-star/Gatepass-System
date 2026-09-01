@@ -27,7 +27,7 @@ class Database extends Config
     public array $default = [
         'DSN'          => '',
         'hostname'     => 'localhost',
-        'username'     => '',
+        'username'     => 'root',
         'password'     => '',
         'database'     => 'hris_system',
         'DBDriver'     => 'MySQLi',
@@ -73,7 +73,7 @@ class Database extends Config
     public array $hris = [
         'DSN'          => '',
         'hostname'     => 'localhost',
-        'username'     => '',
+        'username'     => 'root',
         'password'     => '',
         'database'     => 'hris_system',
         'DBDriver'     => 'MySQLi',

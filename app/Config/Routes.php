@@ -40,7 +40,14 @@ $routes->get('users/sync', 'Pages\UserManagement::syncUsers');
 
 // ---- Approvals (any logged-in approver) ----
 // ---- Approvals (any logged-in approver) ----
-    $routes->get('approvals', 'Approval\GatepassApprovals::inbox');
-    $routes->post('approvals/act', 'Approval\GatepassApprovals::act');
-    $routes->get('approvals/floating', 'Approval\GatepassApprovals::floating');
-    $routes->post('approvals/override', 'Approval\GatepassApprovals::override');
+$routes->get('approvals', 'Approval\GatepassApprovals::inbox');
+$routes->post('gatepass/approvals/act', 'Approval\GatepassApprovals::act');
+$routes->get('gatepass/approvals/floating', 'Approval\GatepassApprovals::floating');
+$routes->post('gatepass/approvals/override', 'Approval\GatepassApprovals::override');
+
+$routes->get('approving-sequence', 'Workflow\WorkflowBuilder::index');
+$routes->get('approving-sequence/(:num)', 'Workflow\WorkflowBuilder::show/$1');
+$routes->post('approving-sequence/save', 'Workflow\WorkflowBuilder::save');
+$routes->post('approving-sequence/validate', 'Workflow\WorkflowBuilder::validateGraph');
+$routes->post('approving-sequence/delete/(:num)', 'Workflow\WorkflowBuilder::destroy/$1');
+

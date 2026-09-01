@@ -14,7 +14,7 @@ if (! function_exists('module_slug')) {
     {
         $overrides = [
             'Request'         => 'gatepass',
-            'Approval'        => 'approvals',
+            'Approval'        => 'gatepass/approvals',
             'User Management' => 'user-management',
             'Setup'           => 'setup',
         ];
