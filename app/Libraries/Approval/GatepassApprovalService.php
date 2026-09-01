@@ -10,9 +10,7 @@ use App\Libraries\Workflow\GatepassWorkflowEngine;
  * Answers "someone acted on a step - what decision was recorded, and does
  * that close the request or hand it back to the router for the next node?"
  * Depends on GatepassWorkflowEngine (routing) to actually move the request
- * forward; never the other way around. This is the class your controllers
- * call for act()/override() - GatepassWorkflowEngine is only called
- * directly for the initial route() on request creation.
+ * forward; never the other way around.
  */
 class GatepassApprovalService
 {
@@ -53,6 +51,21 @@ class GatepassApprovalService
 
         $this->workflow->log($requestId, 'approved_step', $actingUserId, $remarks);
 
+        // Multi-approve node: if this step belonged to an ordered slot
+        // chain and slots remain, move to the next slot on the SAME node
+        // instead of advancing to the next node in the graph.
+        if (array_key_exists('slot_priority', $step) && $step['slot_priority'] !== null) {
+            $stillOnThisNode = $this->workflow->advanceMultiApproverNode(
+                $requestId,
+                (int) $step['node_id'],
+                (int) $step['slot_priority']
+            );
+            if ($stillOnThisNode) {
+                return; // another slot is now pending/floating - stop here
+            }
+            // every slot satisfied - fall through to the normal edge advance below
+        }
+
         // Straight-line lookup for now (one outgoing edge). This is the
         // spot to change once you add decision-based branching - pick the
         // edge whose condition matches $decision instead of always taking
@@ -71,6 +84,9 @@ class GatepassApprovalService
     /**
      * Force a pending/floating request to a final state. Caller (controller)
      * must have already checked GatepassRoleResolver::isOverrideCapable().
+     * Works regardless of whether the current step belongs to a legacy
+     * single-approver node or a multi-approve slot chain - it just closes
+     * out whatever the current open step is.
      */
     public function override(int $requestId, int $overriderId, string $decision, string $remarks = ''): void
     {

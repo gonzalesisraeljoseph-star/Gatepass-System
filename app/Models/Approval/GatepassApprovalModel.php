@@ -10,8 +10,8 @@ class GatepassApprovalModel extends Model
     protected $table         = 'gatepass_request_approvals';
     protected $primaryKey    = 'id';
     protected $allowedFields = [
-        'request_id', 'node_id', 'role_id', 'user_id', 'status',
-        'remarks', 'acted_by', 'acted_at', 'created_at',
+        'request_id', 'node_id', 'role_id', 'user_id', 'slot_priority',
+        'status', 'remarks', 'acted_by', 'acted_at', 'created_at',
     ];
     protected $returnType    = 'array';
     protected $useTimestamps = false;

@@ -75,6 +75,17 @@ class WorkflowBuilder extends BaseController
     }
 
     /**
+     * True if a role_id/user_id field is meaningfully set. 0 is a valid id
+     * in this schema (superadmin's user id is 0), so empty()/falsy checks
+     * incorrectly treat a real, bound id of 0 as "unset". Only null/''
+     * count as unbound.
+     */
+    private function isBound($value): bool
+    {
+        return $value !== null && $value !== '';
+    }
+
+    /**
      * Validates a graph before it's allowed to save. Identical rules to the
      * prototype: no orphan dots, start/end required, every start/approver
      * node needs an outgoing line, every approver/end node needs an
@@ -114,7 +125,7 @@ class WorkflowBuilder extends BaseController
                 if (empty($outgoing[$id])) {
                     $problems[] = "\"$label\" (start) is not connected to anything - draw a line from it to the first approver.";
                 }
-                if (empty($n['role_id']) && empty($n['user_id'])) {
+                if (!$this->isBound($n['role_id'] ?? null) && !$this->isBound($n['user_id'] ?? null)) {
                     $problems[] = "\"$label\" (start) isn't bound to a role or a specific person yet - pick who this route applies to.";
                 }
             }
@@ -126,7 +137,7 @@ class WorkflowBuilder extends BaseController
                 if (empty($outgoing[$id])) {
                     $problems[] = "\"$label\" has no outgoing connection - the request would have nowhere to go after this dot.";
                 }
-                if (empty($n['role_id']) && empty($n['user_id'])) {
+                if (!$this->isBound($n['role_id'] ?? null) && !$this->isBound($n['user_id'] ?? null)) {
                     $problems[] = "\"$label\" isn't bound to a role or a specific person yet - pick one.";
                 }
             }
@@ -217,8 +228,8 @@ class WorkflowBuilder extends BaseController
             $realId = $nodeModel->insert([
                 'workflow_template_id' => $templateId,
                 'node_type'            => $n['node_type'],
-                'role_id'              => $n['role_id'] ?: null,
-                'user_id'              => $n['user_id'] ?: null,
+                'role_id'              => $this->isBound($n['role_id'] ?? null) ? $n['role_id'] : null,
+                'user_id'              => $this->isBound($n['user_id'] ?? null) ? $n['user_id'] : null,
                 'label'                => $n['label'],
                 'pos_x'                => $n['pos_x'],
                 'pos_y'                => $n['pos_y'],
@@ -235,7 +246,7 @@ class WorkflowBuilder extends BaseController
         }
 
         foreach ($payload['assignments'] ?? [] as $a) {
-            if (empty($a['applies_to_id'])) {
+            if (!$this->isBound($a['applies_to_id'] ?? null)) {
                 continue;
             }
             $assignModel->insert([
