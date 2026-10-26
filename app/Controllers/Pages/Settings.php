@@ -48,6 +48,9 @@ class Settings extends BaseController
             if ($key === '') return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'No document format is assigned to this form yet. Assign a template in the document settings first.']);
             $template = $db->table('gatepass_document_templates')->where('template_key', $key)->countAllResults();
             if (!$template) return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'The assigned document template is missing. Run the pending database migrations, then reload settings.']);
+            if (!$db->fieldExists('footer_height', 'gatepass_document_templates')) {
+                throw new \RuntimeException('The footer_height database migration has not been applied.');
+            }
             $settings = [
                 'header_text' => $this->cleanEditorHtml((string) $this->request->getPost('header_text')),
                 'footer_text' => $this->cleanEditorHtml((string) $this->request->getPost('footer_text')),
@@ -56,19 +59,26 @@ class Settings extends BaseController
                 'margin_right' => $this->cleanMargin('margin_right', 0.75, 0.25, 2.00),
                 'margin_top' => $this->cleanMargin('margin_top', 1.50, 0.50, 2.50),
                 'margin_bottom' => $this->cleanMargin('margin_bottom', 1.00, 0.25, 2.00),
+                'footer_height' => $this->cleanFooterHeight(),
             ];
             if (!$db->table('gatepass_document_templates')->where('template_key', $key)->update($settings + ['updated_at' => date('Y-m-d H:i:s')])) {
                 throw new \RuntimeException('The database rejected the document update.');
             }
             $saved = $db->table('gatepass_document_templates')->where('template_key', $key)->get()->getRowArray();
-            foreach (['header_text', 'footer_text', 'body_html'] as $field) {
-                if (!isset($saved[$field]) || $saved[$field] !== $settings[$field]) {
+            foreach (['header_text', 'footer_text', 'body_html', 'footer_height'] as $field) {
+                $matches = $field === 'footer_height'
+                    ? isset($saved[$field]) && (int) $saved[$field] === $settings[$field]
+                    : isset($saved[$field]) && $saved[$field] === $settings[$field];
+                if (!$matches) {
                     throw new \RuntimeException('The saved ' . $field . ' content did not match the editor.');
                 }
             }
         } catch (\Throwable $e) {
             log_message('error', 'Unable to save assigned document: ' . $e->getMessage());
-            return $this->response->setStatusCode(503)->setJSON(['success' => false, 'message' => 'The document could not be saved. Reload Document Settings and try again. If it still fails, the server error has been logged for investigation.']);
+            $message = str_contains($e->getMessage(), 'footer_height')
+                ? 'The database is missing the footer height field. Apply the pending document template migration, then reload Document Settings and save again.'
+                : 'The document could not be saved. Reload Document Settings and try again. If it still fails, the server error has been logged for investigation.';
+            return $this->response->setStatusCode(503)->setJSON(['success' => false, 'message' => $message]);
         }
         return $this->response->setJSON([
             'success' => true,
@@ -90,6 +100,13 @@ class Settings extends BaseController
         $value = $this->request->getPost($key);
         if (!is_numeric($value)) return $default;
         return round(max($min, min($max, (float) $value)), 2);
+    }
+
+    private function cleanFooterHeight(): int
+    {
+        $value = $this->request->getPost('footer_height');
+        if (!is_numeric($value)) return 28;
+        return max(28, min(1200, (int) round((float) $value)));
     }
 
     private function cleanEditorHtml(string $html): string
