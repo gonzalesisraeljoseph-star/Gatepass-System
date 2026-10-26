@@ -23,6 +23,21 @@ $routes->get('/accessories', 'Pages\Accessories::index');
 $routes->get('gatepass', 'Pages\Gatepass::index');
 $routes->get('gatepass/list', 'Pages\Gatepass::list');
 $routes->post('gatepass/store', 'Pages\Gatepass::store');
+$routes->post('accountability/store', 'Pages\Gatepass::storeAccountability');
+$routes->get('accountability/list', 'Pages\Gatepass::listAccountability');
+$routes->get('accountability/(:num)/pdf', 'Pages\Gatepass::downloadAccountabilityPdf/$1');
+$routes->get('accountability/admin/(:num)', 'Pages\Gatepass::adminShowAccountability/$1');
+$routes->post('accountability/admin/(:num)', 'Pages\Gatepass::adminUpdateAccountability/$1');
+$routes->get('accountability/attachments/(:num)/view', 'Pages\Gatepass::viewAccountabilityAttachment/$1');
+$routes->get('accountability/attachments/(:num)/download', 'Pages\Gatepass::downloadAccountabilityAttachment/$1');
+$routes->post('accountability/(:num)/attachments', 'Pages\Gatepass::addAccountabilityAttachment/$1');
+$routes->post('accountability/attachments/(:num)/replace', 'Pages\Gatepass::replaceAccountabilityAttachment/$1');
+$routes->post('accountability/attachments/(:num)/delete', 'Pages\Gatepass::deleteAccountabilityAttachment/$1');
+$routes->get('template', 'Workflow\WorkflowBuilder::index');
+$routes->get('reports', 'Pages\Reports::index');
+$routes->get('settings', 'Pages\Settings::index');
+$routes->post('settings/password', 'Pages\Settings::updatePassword');
+$routes->post('settings/accountability-document', 'Pages\Settings::saveAccountabilityDocument');
 
 
 /** API */

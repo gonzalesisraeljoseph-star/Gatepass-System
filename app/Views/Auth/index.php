@@ -26,7 +26,10 @@
 
                     </div>
 
-                    <form id="formAuthentication">
+                    <form 
+                    id="formAuthentication"
+                    data-login-url="<?= site_url('authentication') ?>"
+                    data-dashboard-url="<?= site_url('dashboard') ?>">
 
 
                         <div class="mb-3">

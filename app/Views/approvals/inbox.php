@@ -103,6 +103,17 @@ body{
     font-weight:600;
     cursor:pointer;
 }
+.request-row--gatepass td { background-color:#eff6ff; }
+.request-row--accountability td { background-color:#f5f3ff; }
+.request-row--other td { background-color:#f8fafc; }
+.request-type-badge { display:inline-block; border-radius:999px; padding:5px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
+.request-type-badge--gatepass { background:#dbeafe; color:#1d4ed8; }
+.request-type-badge--accountability { background:#ede9fe; color:#6d28d9; }
+.request-type-badge--other { background:#e2e8f0; color:#334155; }
+.decision-badge { display:inline-block; border-radius:999px; padding:5px 10px; font-size:12px; font-weight:700; }
+.decision-badge--pending { background:#fef3c7; color:#92400e; }
+.decision-badge--approved { background:#dcfce7; color:#166534; }
+.decision-badge--rejected { background:#fee2e2; color:#991b1b; }
 </style>
 
 <div class="body-wrapper">
@@ -111,9 +122,15 @@ body{
     <div class="page-header d-flex justify-content-between align-items-center">
         <div>
             <h3>My Approvals</h3>
-            <small>Gatepass requests currently waiting on your decision</small>
+            <small>Review requests by approval status</small>
         </div>
     </div>
+
+    <ul class="nav nav-tabs mb-3" role="tablist" aria-label="Approval views">
+        <li class="nav-item"><a class="nav-link <?= ($activeFilter ?? 'pending') === 'pending' ? 'active' : '' ?>" href="<?= site_url('approvals?filter=pending') ?>" <?= ($activeFilter ?? 'pending') === 'pending' ? 'aria-current="page"' : '' ?>>Pending</a></li>
+        <li class="nav-item"><a class="nav-link <?= ($activeFilter ?? '') === 'approved' ? 'active' : '' ?>" href="<?= site_url('approvals?filter=approved') ?>" <?= ($activeFilter ?? '') === 'approved' ? 'aria-current="page"' : '' ?>>Approve</a></li>
+        <li class="nav-item"><a class="nav-link <?= ($activeFilter ?? '') === 'all' ? 'active' : '' ?>" href="<?= site_url('approvals?filter=all') ?>" <?= ($activeFilter ?? '') === 'all' ? 'aria-current="page"' : '' ?>>All</a></li>
+    </ul>
 
     <?php if (session('error')): ?>
         <div class="alert alert-danger"><?= esc(session('error')) ?></div>
@@ -129,29 +146,52 @@ body{
                     <tr>
                         <th>Request #</th>
                         <th>Requestor</th>
+                        <th>Type</th>
                         <th>Reason</th>
+                        <th>Decision</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($items)): ?>
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">Nothing waiting on you right now.</td>
+                            <td colspan="6" class="text-center text-muted py-4">No requests match this view.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($items as $it): ?>
-                            <tr>
+                            <?php
+                                $requestType = $it['request']['request_type'] ?? 'gatepass';
+                                $typeClass = $requestType === 'accountability' ? 'accountability' : ($requestType === 'gatepass' ? 'gatepass' : 'other');
+                                $typeLabel = $requestType === 'accountability' ? 'Accountability' : ($requestType === 'gatepass' ? 'Gate Pass' : ucwords(str_replace('_', ' ', $requestType)));
+                                $decision = $it['step']['status'] ?? 'pending';
+                                $decisionClass = in_array($decision, ['approved', 'overridden'], true) ? 'approved' : ($decision === 'rejected' ? 'rejected' : 'pending');
+                            ?>
+                            <tr class="request-row--<?= esc($typeClass) ?>">
                                 <td>#<?= esc($it['request']['id']) ?></td>
                                 <td><?= esc($it['request']['requestor_name']) ?></td>
+                                <td><span class="request-type-badge request-type-badge--<?= esc($typeClass) ?>"><?= esc($typeLabel) ?></span></td>
                                 <td class="reason-cell"><?= esc($it['request']['reason']) ?></td>
+                                <td><span class="decision-badge decision-badge--<?= esc($decisionClass) ?>"><?= esc(ucfirst($decisionClass)) ?></span></td>
                                 <td>
-                                    <form method="post" action="<?= site_url('gatepass/approvals/act') ?>" class="action-form">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="request_id" value="<?= esc($it['request']['id']) ?>">
-                                        <input type="text" name="remarks" placeholder="remarks (optional)">
-                                        <button type="submit" name="decision" value="approved" class="btn-approve">Approve</button>
-                                        <button type="submit" name="decision" value="rejected" class="btn-reject">Reject</button>
-                                    </form>
+                                    <?php if (($it['request']['request_type'] ?? '') === 'accountability'): ?>
+                                        <details class="mb-2"><summary class="small text-primary" role="button">Review form details</summary>
+                                            <div class="small mt-2"><strong>Document No.:</strong> <?= esc($it['request']['document_number'] ?? '') ?> · <strong>Date Issued:</strong> <?= esc($it['request']['form_date'] ?? '') ?> · <strong>Department:</strong> <?= esc($it['request']['department'] ?? '') ?> · <strong>Mobile:</strong> <?= esc($it['request']['mobile'] ?? '') ?><br><strong>Email:</strong> <?= esc($it['request']['email'] ?? '') ?><br><strong>Address:</strong> <?= esc($it['request']['address'] ?? '') ?><br><strong>Signature over printed name:</strong> <?= esc($it['request']['signature_name'] ?? '') ?><br><strong>Verified by:</strong> <?= esc($it['request']['verified_by'] ?? '') ?> · <strong>Approved by:</strong> <?= esc($it['request']['approved_by'] ?? '') ?></div>
+                                            <div class="table-responsive mt-2"><table class="table table-sm table-bordered"><thead><tr><th>Item no.</th><th>Description</th><th>Model / Brand</th><th>Serial Number</th><th>Employee</th><th>Remarks</th><th>Date Issued</th></tr></thead><tbody>
+                                            <?php foreach (($it['request']['equipment'] ?? []) as $itemIndex => $equipment): ?><tr><td><?= esc($itemIndex + 1) ?></td><td><?= esc($equipment['description']) ?></td><td><?= esc($equipment['model_brand']) ?></td><td><?= esc($equipment['serial_number']) ?></td><td><?= esc($equipment['employee']) ?></td><td><?= esc($equipment['remarks']) ?></td><td><?= esc($equipment['item_date']) ?></td></tr><?php endforeach; ?>
+                                            </tbody></table></div>
+                                        </details>
+                                    <?php endif; ?>
+                                    <?php if ($decision === 'pending'): ?>
+                                        <form method="post" action="<?= site_url('gatepass/approvals/act') ?>" class="action-form">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="request_id" value="<?= esc($it['request']['id']) ?>">
+                                            <input type="text" name="remarks" placeholder="remarks (optional)">
+                                            <button type="submit" name="decision" value="approved" class="btn-approve">Approve</button>
+                                            <button type="submit" name="decision" value="rejected" class="btn-reject">Reject</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <span class="text-muted small"><?= $decision === 'overridden' ? 'Overridden' : 'Action recorded' ?> <?= esc($it['step']['acted_at'] ?? '') ?></span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

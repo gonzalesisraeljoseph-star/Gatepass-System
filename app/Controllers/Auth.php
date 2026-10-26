@@ -65,6 +65,7 @@ class Auth extends BaseController
         $roleIds = (new UserRoleModel())->roleIdsForUser((int) $user->ref_emp);
 
         $this->session->set('logged_in', [
+            'user_id'         => (int) $user->id,
             'ref_emp'         => $user->ref_emp,
             'username'        => $user->username,
             'full_name'       => $user->full_name,
@@ -73,7 +74,9 @@ class Auth extends BaseController
             'role_ids'        => $roleIds,
         ]);
 
-        
+        log_message('debug', 'LOGIN SESSION: ' . json_encode(
+        $this->session->get('logged_in')
+        ));
 
         $key  = getenv('JWT_SECRET');
         $time = time();

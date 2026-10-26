@@ -39468,3 +39468,11 @@ body .connect-sorting-content {
 #confirmSaveSummary li:last-child {
     border-bottom: none;
 }
+
+/* Keep long accountability equipment lists scrollable within the modal. */
+.accountability-modal-dialog { height: calc(100% - 2rem); max-height: calc(100vh - 2rem); }
+.accountability-modal-dialog .modal-content { height: 100%; max-height: 100%; overflow: hidden; }
+#accountabilityForm, #editAccountabilityForm { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
+#accountabilityForm .modal-body, #editAccountabilityForm .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+#accountabilityForm .modal-footer, #editAccountabilityForm .modal-footer { flex-shrink: 0; }
+#accountabilityTab .dataTables_wrapper, #accountabilityTable { width: 100% !important; }

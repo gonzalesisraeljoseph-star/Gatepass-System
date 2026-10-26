@@ -192,7 +192,13 @@ textarea.form-control {
 
             <div class="mb-3">
                 <label class="form-label fw-semibold">Employee Name</label>
-                <input class="form-control" name="employee" id="employee" required>
+                <input class="form-control" name="employee" id="employee" list="employeeSuggestions" autocomplete="off" required>
+                <datalist id="employeeSuggestions">
+                    <?php foreach (($employees ?? []) as $employee) : ?>
+                        <option value="<?= esc($employee['full_name']) ?>"></option>
+                    <?php endforeach; ?>
+                </datalist>
+                <small class="form-text text-muted">Choose the employee’s name from HRIS. The username can be different (for example, “admin”).</small>
             </div>
 
             <div class="mb-3">
@@ -348,6 +354,7 @@ function escapeHtml(str) {
 
 $(document).ready(function () {
     const rowsSelect = document.getElementById('rowsPerPage');
+    let savingUserConfirmed = false;
 
     // Prevent "Cannot reinitialise DataTable" errors if a global script
     // (e.g. in layouts/main) also auto-inits tables with class "table".
@@ -414,8 +421,18 @@ $(document).ready(function () {
     });
 
     $('#confirmSaveBtn').on('click', function () {
+        savingUserConfirmed = true;
         bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmSaveModal')).hide();
         saveUser();
+    });
+
+    $('#confirmSaveModal').on('hidden.bs.modal', function () {
+        if (savingUserConfirmed) {
+            savingUserConfirmed = false;
+            return;
+        }
+        // The user chose Go Back (or dismissed confirmation); restore the form.
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('createModal')).show();
     });
 
    
@@ -424,6 +441,7 @@ $(document).ready(function () {
 function openCreateModal() {
     document.getElementById('userModalTitle').innerText = 'Create User';
     document.getElementById('userForm').reset();
+    document.getElementById('employee').required = true;
     document.getElementById('userId').value = '';
     document.getElementById('passwordHint').style.display = 'none';
     document.getElementById('passwordGroup').style.display = 'block';
@@ -433,6 +451,7 @@ function openEditModal(row) {
     document.getElementById('userModalTitle').innerText = 'Edit User';
     document.getElementById('userId').value = row.id ?? '';
     document.getElementById('employee').value = row.employee ?? '';
+    document.getElementById('employee').required = !!row.employee;
     document.getElementById('username').value = row.username ?? '';
     document.getElementById('email').value = row.email ?? '';
     document.getElementById('department').value = row.department ?? '';
@@ -508,8 +527,20 @@ function showConfirmSaveModal() {
 
     document.getElementById('confirmSaveSummary').innerHTML = summaryHtml;
 
-    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmSaveModal'));
-    modal.show();
+    const formModalEl = document.getElementById('createModal');
+    const confirmModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmSaveModal'));
+
+    // Bootstrap does not support two active modals at once. Wait for the
+    // form modal to finish hiding before opening its confirmation dialog.
+    if (formModalEl.classList.contains('show')) {
+        formModalEl.addEventListener('hidden.bs.modal', function showConfirmation() {
+            formModalEl.removeEventListener('hidden.bs.modal', showConfirmation);
+            confirmModal.show();
+        }, { once: true });
+        bootstrap.Modal.getOrCreateInstance(formModalEl).hide();
+    } else {
+        confirmModal.show();
+    }
 }
 
 

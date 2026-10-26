@@ -21,10 +21,18 @@ class UserManagement extends BaseController
      */
     public function index()
     {
+        $employees = Database::connect('hris')->table('v_profile_employee')
+            ->select('full_name')
+            ->where('full_name IS NOT NULL', null, false)
+            ->orderBy('full_name', 'ASC')
+            ->get()
+            ->getResultArray();
+
         $data = [
             'users'       => $this->userModel->getAllUsersDetails(),
             'roles'       => $this->userModel->getRoles(),
             'departments' => $this->userModel->getDepartments(),
+            'employees'   => $employees,
         ];
 
         return view('pages/usermanagement', $data);
@@ -75,30 +83,40 @@ class UserManagement extends BaseController
     $roleDescription = $this->request->getPost('role');
     $status          = $this->request->getPost('status'); // 'active' | 'inactive'
 
-    // Resolve ref_emp from the typed employee name.
-    $db = Database::connect(); // hris_system (default group)
-    $employee = $db->table('v_profile_employee')
-        ->select('profile_id')
-        ->where('full_name', $employeeName)
-        ->get()
-        ->getRowArray();
-
-    if (!$employee) {
-        return $this->response->setJSON([
-            'success' => false,
-            'message' => "No employee found matching \"{$employeeName}\".",
-        ]);
+    // Resolve ref_emp for new accounts and edited employee identities. An
+    // existing system account with no HRIS mapping (such as superadmin id 0)
+    // may still have its username/password/role updated with the name blank.
+    $existing = null;
+    if (!empty($id)) {
+        $existing = $this->userModel->find($id);
+        if (!$existing) {
+            return $this->response->setJSON(['success' => false, 'message' => 'User not found.']);
+        }
     }
 
-    $refEmp = $employee['profile_id'];
+    if ($employeeName === '' && $existing) {
+        $refEmp = $existing['ref_emp'];
+    } else {
+        $employee = Database::connect('hris')->table('v_profile_employee')
+            ->select('profile_id')
+            ->where('full_name', $employeeName)
+            ->get()
+            ->getRowArray();
+
+        if (!$employee) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $employeeName === ''
+                    ? 'Select an employee from the HRIS suggestions.'
+                    : "No employee found matching \"{$employeeName}\". Choose a name from the HRIS suggestions.",
+            ]);
+        }
+        $refEmp = $employee['profile_id'];
+    }
     $flag   = $status === 'inactive' ? 0 : 1; // default to active if not sent
 
     if (!empty($id)) {
         if (empty($username)) {
-            $existing = $this->userModel->find($id);
-            if (!$existing) {
-                return $this->response->setJSON(['success' => false, 'message' => 'User not found.']);
-            }
             $username = $existing['username'];
         }
 
@@ -142,7 +160,15 @@ class UserManagement extends BaseController
 
     $roleResult = null;
     if (!empty($roleDescription)) {
-        $roleResult = $this->userModel->assignRole($refEmp, $username, $roleDescription);
+        $roleResult = $this->userModel->assignRole((int) $refEmp, $username, $roleDescription);
+    }
+
+    if (!empty($roleDescription) && empty($roleResult['success'])) {
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'The account was saved, but its role could not be assigned. Please verify the selected role exists.',
+            'role_result' => $roleResult,
+        ])->setStatusCode(422);
     }
 
     return $this->response->setJSON([

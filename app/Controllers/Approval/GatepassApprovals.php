@@ -28,17 +28,22 @@ class GatepassApprovals extends BaseController
     public function inbox()
     {
         $userId = (int) (session('logged_in')['ref_emp'] ?? 0);
+        $filter = strtolower((string) $this->request->getGet('filter'));
+        if (!in_array($filter, ['pending', 'approved', 'all'], true)) $filter = 'pending';
 
         $approvalModel = new GatepassApprovalModel();
-        $mySteps = $approvalModel->inboxFor($userId);
+        $mySteps = $approvalModel->forUserFilter($userId, $filter);
 
         $db = Database::connect('gatepass');
-        $items = array_map(fn ($s) => [
-            'step'    => $s,
-            'request' => $db->table($this->requestsTable)->where('id', $s['request_id'])->get()->getRowArray(),
-        ], $mySteps);
+        $items = array_map(function ($s) use ($db) {
+            $request = $db->table($this->requestsTable)->where('id', $s['request_id'])->get()->getRowArray();
+            if (($request['request_type'] ?? 'gatepass') === 'accountability') {
+                $request['equipment'] = $db->table('gatepass_accountability_items')->where('request_id', $s['request_id'])->get()->getResultArray();
+            }
+            return ['step' => $s, 'request' => $request];
+        }, $mySteps);
 
-        return view('approvals/inbox', ['items' => $items]);
+        return view('approvals/inbox', ['items' => $items, 'activeFilter' => $filter]);
     }
 
     public function act()

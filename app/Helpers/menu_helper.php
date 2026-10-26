@@ -17,6 +17,8 @@ if (! function_exists('module_slug')) {
             'Approval'        => 'gatepass/approvals',
             'User Management' => 'user-management',
             'Setup'           => 'setup',
+            'Report'          => 'reports',
+            'Reports'         => 'reports',
         ];
 
         return $overrides[$label] ?? slugify($label);
@@ -40,6 +42,10 @@ if (! function_exists('submodule_slug')) {
     {
         $overrides = [
             'User Management' => 'user-management',
+            'Template'        => 'template',
+            'Templates'       => 'template',
+            'Report'          => 'reports',
+            'Reports'         => 'reports',
         ];
 
         return $overrides[$label] ?? slugify($label);

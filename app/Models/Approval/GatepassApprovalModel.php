@@ -33,6 +33,23 @@ class GatepassApprovalModel extends Model
                     ->findAll();
     }
 
+    /** Pending steps plus decisions made by this approver, for inbox filters. */
+    public function forUserFilter(int $userId, string $filter): array
+    {
+        $builder = $this->builder();
+        if ($filter === 'pending') {
+            return $builder->where('user_id', $userId)->where('status', 'pending')->orderBy('created_at', 'DESC')->get()->getResultArray();
+        }
+        if ($filter === 'approved') {
+            return $builder->where('acted_by', $userId)->whereIn('status', ['approved', 'overridden'])->orderBy('acted_at', 'DESC')->get()->getResultArray();
+        }
+
+        return $builder->groupStart()
+                ->groupStart()->where('user_id', $userId)->where('status', 'pending')->groupEnd()
+                ->orGroupStart()->where('acted_by', $userId)->whereIn('status', ['approved', 'rejected', 'overridden'])->groupEnd()
+            ->groupEnd()->orderBy('created_at', 'DESC')->get()->getResultArray();
+    }
+
     /** All steps stuck with nobody resolved to act on them (e.g. TL on leave). */
     public function floating(): array
     {

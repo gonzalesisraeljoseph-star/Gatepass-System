@@ -39,7 +39,7 @@
                             <div class="d-flex align-items-center mb-4">
 
                                 <div class="welcome-icon me-4">
-                                    <i class="ti ti-shield-check"></i>
+                                    <iconify-icon icon="tabler:shield-check"></iconify-icon>
                                 </div>
 
                                 <div>

@@ -85,7 +85,7 @@ $menu    = (new \App\Models\ModuleModel())->menuForRoles($roleIds);
         <ul class="sidebar-menu">
 
             <li>
-                <a href="#" class="sidebar-link">
+                <a href="<?= base_url('settings') ?>" class="sidebar-link <?= uri_string() === 'settings' ? 'active' : '' ?>">
                     <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
                     <span>Settings</span>
                 </a>
@@ -144,7 +144,7 @@ $menu    = (new \App\Models\ModuleModel())->menuForRoles($roleIds);
               <li class="nav-item dropdown nav-icon-hover-bg rounded-circle">
                 <a class="navbar-toggler nav-link text-white nav-icon-hover border-0" href="javascript:void(0)" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                   <span class="">
-                    <i class="ti ti-dots fs-7"></i>
+                    <iconify-icon icon="tabler:dots" class="fs-7"></iconify-icon>
                   </span>
                 </a>
               </li>

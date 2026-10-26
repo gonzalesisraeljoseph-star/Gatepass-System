@@ -56,7 +56,7 @@ class Database extends Config
             'hostname'     => 'localhost',
             'username'     => 'root',
             'password'     => '',
-            'database'     => 'db_gatepass',
+            'database'     => 'db_gatepass-8',
             'DBDriver'     => 'MySQLi',
             'DBPrefix'     => '',
             'pConnect'     => false,

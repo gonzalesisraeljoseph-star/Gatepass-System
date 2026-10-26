@@ -26,4 +26,26 @@ class userRoleModel extends Model
 
         return array_map(static fn ($r) => (int) $r['role_id'], $rows);
     }
+
+    /** Whether the HRIS employee/user id has an administrative role. */
+    public function isAdministrator(int $userId): bool
+    {
+        if ($userId < 0) {
+            return false;
+        }
+
+        $rows = $this->select('role.role_desc')
+            ->join('role', 'role.role_id = user_roles.role_id')
+            ->where('user_roles.user_id', $userId)
+            ->where('role.archived', 0)
+            ->findAll();
+
+        foreach ($rows as $row) {
+            if (in_array(strtolower(trim($row['role_desc'])), ['admin', 'superadmin', 'super admin'], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

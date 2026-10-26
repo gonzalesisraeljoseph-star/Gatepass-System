@@ -30,21 +30,54 @@ $(document).on('hidden.bs.modal', '.modal', function () {
 
 $(function () {
 
-    table = $('#gatepassTable').DataTable({
-        ajax: "<?= base_url('gatepass/list') ?>",
-        columns: [
-            { data: 'id' },
-            { data: 'requestor_name' },
-            { data: 'reason' },
-            {
-                data: 'status',
-                render: renderGatepassStatus
-            },
-            { data: 'created_at' }
-        ]
+    $('#newRequestButton').on('click', function () {
+        const modalSelector = $('#accountabilityTab').hasClass('active') ? '#accountabilityModal' : '#createModal';
+        const modalElement = document.querySelector(modalSelector);
+        if (modalElement) bootstrap.Modal.getOrCreateInstance(modalElement).show();
     });
 
-    loadDevices();
+    if ($('#gatepassTable').length) {
+        table = $('#gatepassTable').DataTable({
+            ajax: "<?= base_url('gatepass/list') ?>",
+            columns: [
+                { data: 'id' },
+                { data: 'requestor_name' },
+                { data: 'reason' },
+                {
+                    data: 'status',
+                    render: renderGatepassStatus
+                },
+                { data: 'created_at' }
+            ]
+        });
+    }
+
+    if ($('#accountabilityTable').length) {
+        $('#accountabilityTable').DataTable({
+            ajax: "<?= base_url('accountability/list') ?>",
+            autoWidth: false,
+            columns: [
+                { data: 'document_number', defaultContent: '' },
+                { data: 'requestor_name' },
+                { data: 'form_date', defaultContent: '' },
+                { data: null, orderable: false, searchable: false, render: function (data, type, row) {
+                    return `<a class="btn btn-sm btn-outline-primary" href="<?= base_url('accountability') ?>/${row.id}/pdf">Download PDF</a>`;
+                } }
+                <?php if ($canManageAccountability ?? false): ?>,
+                { data: null, orderable: false, searchable: false, render: (data, type, row) => `<button type="button" class="btn btn-sm btn-outline-secondary edit-accountability" data-id="${row.id}">Edit</button>` }
+                <?php endif; ?>
+            ]
+        });
+        document.querySelector('[data-bs-target="#accountabilityTab"]')?.addEventListener('shown.bs.tab', function () {
+            $('#accountabilityTable').DataTable().columns.adjust().draw(false);
+        });
+    }
+
+    // The hardware endpoint requires an employee mapping. Only request
+    // hardware on the gatepass form page when its selector is present.
+    if ($('#deviceSelect').length) {
+        loadDevices();
+    }
 
     $('#gatepassForm').on('submit', function (e) {
         e.preventDefault();
@@ -89,10 +122,109 @@ $(function () {
                 }
             },
 
-            error: function () {
-                Swal.fire('Server Error', 'Check console for details', 'error');
+            error: function (xhr) {
+                Swal.fire('Unable to submit', xhr.responseJSON?.message || 'The gate pass request could not be saved. Please try again.', 'error');
             }
         });
+    });
+
+    let equipmentIndex = 0;
+    function addEquipmentRow() {
+        const i = equipmentIndex++;
+        const employee = $('#accountabilityForm [name="requestor_name"]').val() || '';
+        $('#equipmentRows').append(`<tr>
+            <td class="equipment-number"></td>
+            <td><input class="form-control" name="items[${i}][description]" required></td>
+            <td><input class="form-control" name="items[${i}][model_brand]"></td>
+            <td><input class="form-control" name="items[${i}][serial_number]"></td>
+            <td><input class="form-control" name="items[${i}][employee]" value="${$('<div>').text(employee).html()}" required></td>
+            <td><input class="form-control" name="items[${i}][remarks]"></td>
+            <td><input class="form-control" type="date" name="items[${i}][item_date]" value="<?= date('Y-m-d') ?>"></td>
+            <td><button class="btn btn-sm btn-outline-danger remove-equipment" type="button" aria-label="Remove item">×</button></td>
+        </tr>`);
+        $('#equipmentRows tr').each(function (index) { $(this).find('.equipment-number').text(index + 1); });
+        const body = document.querySelector('#accountabilityForm .accountability-form-body');
+        const lastRow = document.querySelector('#equipmentRows tr:last-child');
+        if (body && lastRow) lastRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    if ($('#equipmentRows').length) addEquipmentRow();
+    $('#addEquipmentRow').on('click', addEquipmentRow);
+    $('#equipmentRows').on('click', '.remove-equipment', function () {
+        $(this).closest('tr').remove();
+        $('#equipmentRows tr').each(function (index) { $(this).find('.equipment-number').text(index + 1); });
+    });
+
+    $('#accountabilityForm').on('submit', function (e) {
+        e.preventDefault();
+        const form = this;
+        const body = new FormData(form);
+        $.ajax({
+            url: "<?= base_url('accountability/store') ?>",
+            type: 'POST', data: body, dataType: 'json', processData: false, contentType: false,
+            success: function (res) {
+                if (!res.status) return Swal.fire('Error', res.message || 'Unable to save request', 'error');
+                const modalEl = document.getElementById('accountabilityModal');
+                modalEl.addEventListener('hidden.bs.modal', function handler() {
+                    $('#accountabilityForm')[0].reset();
+                    $('#equipmentRows').empty(); equipmentIndex = 0; addEquipmentRow();
+                    $('#accountabilityTable').DataTable().ajax.reload(null, false);
+                    Swal.fire({icon:'success', title:'Submitted', text:res.message, timer:1800, showConfirmButton:false});
+                    modalEl.removeEventListener('hidden.bs.modal', handler);
+                });
+                bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+            },
+            error: function (xhr) {
+                const message = xhr.responseJSON?.message || 'Unable to submit the accountability form.';
+                Swal.fire('Error', message, 'error');
+            }
+        });
+    });
+
+    function addAdminEquipmentRow(item = {}) {
+        const i = $('#adminEquipmentRows tr').length;
+        const esc = value => $('<div>').text(value || '').html();
+        $('#adminEquipmentRows').append(`<tr>
+            <td class="admin-equipment-number"></td>
+            <td><input class="form-control" name="items[${i}][description]" value="${esc(item.description)}" required></td>
+            <td><input class="form-control" name="items[${i}][model_brand]" value="${esc(item.model_brand)}"></td>
+            <td><input class="form-control" name="items[${i}][serial_number]" value="${esc(item.serial_number)}"></td>
+            <td><input class="form-control" name="items[${i}][employee]" value="${esc(item.employee)}" required></td>
+            <td><input class="form-control" name="items[${i}][remarks]" value="${esc(item.remarks)}"></td>
+            <td><input class="form-control" type="date" name="items[${i}][item_date]" value="${esc(item.item_date)}"></td>
+            <td><button class="btn btn-sm btn-outline-danger remove-admin-equipment" type="button">×</button></td>
+        </tr>`);
+        $('#adminEquipmentRows tr').each((index, row) => $(row).find('.admin-equipment-number').text(index + 1));
+    }
+    $('#addAdminEquipmentRow').on('click', () => addAdminEquipmentRow());
+    $('#adminEquipmentRows').on('click', '.remove-admin-equipment', function () {
+        $(this).closest('tr').remove();
+        $('#adminEquipmentRows tr').each((index, row) => $(row).find('.admin-equipment-number').text(index + 1));
+    });
+    $('#accountabilityTable').on('click', '.edit-accountability', function () {
+        const requestId = $(this).data('id');
+        $.getJSON(`<?= base_url('accountability/admin') ?>/${requestId}`, function (res) {
+            if (!res.status) return Swal.fire('Unable to load document', res.message, 'error');
+            const form = $('#editAccountabilityForm')[0];
+            form.reset();
+            $('#adminEquipmentRows').empty();
+            form.elements.request_id.value = requestId;
+            ['requestor_name','department','form_date','mobile','email','address','signature_name','verified_by','approved_by'].forEach(field => {
+                form.elements[field].value = res.request[field] || '';
+            });
+            (res.request.items || []).forEach(item => addAdminEquipmentRow(item));
+            if (!(res.request.items || []).length) addAdminEquipmentRow();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editAccountabilityModal')).show();
+        }).fail(xhr => Swal.fire('Unable to load document', xhr.responseJSON?.message || 'Please try again.', 'error'));
+    });
+    $('#editAccountabilityForm').on('submit', function (e) {
+        e.preventDefault();
+        const requestId = this.elements.request_id.value;
+        $.post(`<?= base_url('accountability/admin') ?>/${requestId}`, $(this).serialize(), function (res) {
+            if (!res.status) return Swal.fire('Unable to save', res.message || 'Please try again.', 'error');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editAccountabilityModal')).hide();
+            $('#accountabilityTable').DataTable().ajax.reload(null, false);
+            Swal.fire({icon:'success', title:'Saved', text:res.message, timer:1600, showConfirmButton:false});
+        }, 'json').fail(xhr => Swal.fire('Unable to save', xhr.responseJSON?.message || 'Please try again.', 'error'));
     });
 
 });

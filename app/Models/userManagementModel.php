@@ -20,7 +20,11 @@ class userManagementModel extends Model
     protected $allowedFields = [
         'username',
         'md5_password',
+        // Accepted from forms so hashPassword() can convert it to the real
+        // md5_password column before the INSERT/UPDATE is issued.
+        'password',
         'ref_emp',
+        'flag',
     ];
 
     // Timestamps
@@ -64,8 +68,9 @@ class userManagementModel extends Model
     protected function hashPassword(array $data)
     {
         if (isset($data['data']['password']) && $data['data']['password'] !== '') {
-            // Actual column is md5_password, not password.
-            $data['data']['md5_password'] = password_hash($data['data']['password'], PASSWORD_DEFAULT);
+            // The existing login database stores MD5 in md5_password and
+            // Auth::login() verifies that legacy format.
+            $data['data']['md5_password'] = md5($data['data']['password']);
         }
 
         // Never let raw 'password' reach the DB - it's not a real column.
@@ -155,7 +160,7 @@ class userManagementModel extends Model
                         e.department_name as department,
                         e.position_name as position,
                         '' as email,
-                        'active' as status")
+                        CASE WHEN COALESCE(u.flag, 1) = 1 THEN 'active' ELSE 'inactive' END as status")
             ->join('v_profile_employee e', 'e.profile_id = u.ref_emp', 'left')
             ->orderBy('u.id', 'ASC')
             ->get()
@@ -173,10 +178,24 @@ class userManagementModel extends Model
         $roleMap = array_column($roleRows, 'role_desc', 'user_id');
 
         foreach ($users as &$user) {
-            $user['role'] = $roleMap[$user['ref_emp']] ?? '';
+            // Null HRIS mappings are represented as id 0 for the legacy
+            // superadmin account in user_roles.
+            $user['role'] = $roleMap[(int) ($user['ref_emp'] ?? 0)] ?? '';
         }
 
         return $users;
+    }
+
+    /** Toggle a user's active flag. Returns the new value or null if missing. */
+    public function toggleFlag($id): ?int
+    {
+        $user = $this->find($id);
+        if (!$user) {
+            return null;
+        }
+
+        $newFlag = (int) ($user['flag'] ?? 1) === 1 ? 0 : 1;
+        return $this->update($id, ['flag' => $newFlag]) ? $newFlag : null;
     }
 
     /**
@@ -264,14 +283,16 @@ class userManagementModel extends Model
             ->getRowArray();
 
         if ($existingRole) {
-            $targetDb->table('user_roles')
+            $updated = $targetDb->table('user_roles')
                 ->where('user_id', $refEmp)
                 ->update(['role_id' => $role['role_id']]); // updated_at auto-bumps via ON UPDATE CURRENT_TIMESTAMP
 
             $affected = $targetDb->affectedRows();
 
             return [
-                'success'     => $affected > 0,
+                // MySQL reports zero affected rows when the role was already
+                // equal to the requested value; that is still a successful save.
+                'success'     => $updated,
                 'action'      => 'update',
                 'user_id'     => $refEmp,
                 'old_role_id' => $existingRole['role_id'],
